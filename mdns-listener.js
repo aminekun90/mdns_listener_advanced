@@ -29,15 +29,12 @@ const hostnames = hosts.split("\n")
 
 console.log("Serving hostnames:", hostnames.join(', '));
 
-// Get our ip
+// Get all our ips
 
-var ip;
 var all_ips = [];
 
 function getMyIp() {
-  // const hostname = os.hostname();
   let ifaces = os.networkInterfaces();
-  // let adresses = [];
   Object.keys(ifaces).forEach(function (ifname) {
     var alias = 0;
 
@@ -46,14 +43,15 @@ function getMyIp() {
         // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
         return;
       }
-
-      if (alias >= 1) {
-        // this single interface has multiple ipv4 addresses
-        console.log(ifname + ':' + alias, iface.address);
-      } else {
-        // this interface has only one ipv4 adress
-        // console.log(ifname, iface.address);
-      }
+      // Not needed !!------
+      // if (alias >= 1) {
+      //   // this single interface has multiple ipv4 addresses
+      //   // console.log(ifname + ':' + alias, iface.address);
+      // } else {
+      //   // this interface has only one ipv4 adress
+      //   // console.log(ifname, iface.address);
+      // }
+      // -----
       if (all_ips.find(thisip => thisip === iface.address) !== undefined) {
         all_ips.push(iface.address);
       }
@@ -61,15 +59,6 @@ function getMyIp() {
       ++alias;
     });
   });
-  // // console.log(adresses)
-  // dns.lookup(hostname, (err, addr, fam) => {
-
-  //   if (ip !== addr) {
-  //     console.log('addr: ', addr);
-  //     // ip = addr;
-  //     ip = '192.168.1.103'
-  //   }
-  // });
 }
 
 getMyIp();
@@ -99,13 +88,10 @@ all_ips.forEach(ip => {
 });
 
 
-// find
-
+// find all hostnames in the network
 let overall_found = [];
 mdns.on('response', function (response) {
   hostnames.forEach(hostname => {
-    // console.log('start looking for', hostname)
-
     let findHost = response.answers.find(answer => answer.name === hostname);
     if (findHost !== undefined) {
       let find = response.answers.find(answer => answer.name === 'connection.local' && answer.type === 'A');
