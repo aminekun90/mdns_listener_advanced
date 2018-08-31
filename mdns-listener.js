@@ -1,7 +1,7 @@
 #!/usr/bin/env node --use_strict
 
 const mdns = require('multicast-dns')()
-const dns = require('dns');
+// const dns = require('dns'); // not used anymore
 const os = require('os');
 const fs = require('fs');
 
@@ -89,21 +89,25 @@ all_ips.forEach(ip => {
 
 
 // find all hostnames in the network
-let overall_found = [];
+let overall_found = {};
 mdns.on('response', function (response) {
+  // console.log('Response found ! ', response.answers);
   hostnames.forEach(hostname => {
+    if (overall_found[hostname] === undefined) {
+      overall_found[hostname] = [];
+    }
     let findHost = response.answers.find(answer => answer.name === hostname);
     if (findHost !== undefined) {
-      let find = response.answers.find(answer => answer.name === 'connection.local' && answer.type === 'A');
+      let find = response.answers.find(answer => (answer.name === 'connection.local' || answer.name === 'ash-2.local') && answer.type === 'A');
       if (find !== undefined) {
         let playeradress = find.data;
-        if (overall_found.find(adress => playeradress === adress) === undefined)
-          overall_found.push(playeradress)
+        if (overall_found[hostname].find(adress => playeradress === adress) === undefined)
+          overall_found[hostname].push(playeradress)
         console.log('Found a ', hostname, ' on addresses', overall_found);
 
       }
-
     }
+
   });
 
 })
