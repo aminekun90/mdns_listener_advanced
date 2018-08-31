@@ -54,6 +54,7 @@ Logfiles are available in
 
 ### Todo :
 
+- [ ] Remove a hostname if it's not available anymore
 - [ ] Automatic startup on login (Windows)
 
 ## Package formats
@@ -124,4 +125,4 @@ RESPONSE from this script
 
 ## known / reported issues :
 
-- [ ] Not detecting avahi, zeroconf launched in the same machine
+- [x] Not detecting avahi, zeroconf launched in the same machine (fixed)
