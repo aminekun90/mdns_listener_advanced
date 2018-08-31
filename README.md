@@ -35,7 +35,7 @@ Just run
 node index.js
 ```
 
-## Autmatic startup on login (macOS)
+<!-- ## Autmatic startup on login (macOS)
 
 ```bash
 cp mdns-listener.plist-sample mdns-listener.plist
@@ -50,14 +50,31 @@ launchctl load ~/Library/LaunchAgents/mdns-listener.plist
 Logfiles are available in
 
 - /tmp/mdns-listener-error.log
-- /tmp/mdns-listener.log
+- /tmp/mdns-listener.log -->
 
 ### Todo :
 
 - [ ] Remove a hostname if it's not available anymore
-- [ ] Automatic startup on login (Windows)
+  <!-- - [ ] Automatic startup on login (Windows) -->
 
-## Package formats
+## How to use
+
+You can use the function `mdns-listener.Listen()` like this:
+
+This example is from index.js file :
+
+```javascript
+const advanced_mdns = require("./mdns-listener");
+
+advanced_mdns.listen().on("new_hostname", found_hostnames => {
+  console.log("found_hostnames", found_hostnames);
+  // -- MORE CODE !
+
+  // --!
+});
+```
+
+## SOME NOTES
 
 Some notes that may be useful when changing the script.
 
