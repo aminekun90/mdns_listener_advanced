@@ -91,6 +91,9 @@ all_ips.forEach(ip => {
 
 // find all hostnames in the network
 let overall_found = {};
+/**
+ * Listen to the network
+ */
 exports.listen = () => {
   let myEvent = new EventEmitter();
   mdns.on('response', function (response) {
@@ -127,4 +130,4 @@ exports.listen = () => {
 //   }]
 // })
 
-exports.overall_found = overall_found;
+// exports.overall_found = overall_found;
