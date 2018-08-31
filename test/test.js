@@ -1,7 +1,7 @@
 'use strict';
 
 var expect = require('chai').expect;
-var mdnsListner = require('../mdns-listener');
+var mdnsListner = require('../index');
 const EventEmitter = require('events');
 
 describe('#Listen', function () {
