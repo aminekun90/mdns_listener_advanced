@@ -91,11 +91,13 @@ all_ips.forEach(ip => {
 
 // find all hostnames in the network
 let overall_found = {};
+let myEvent = new EventEmitter();
 /**
  * Listen to the network
  */
 exports.listen = () => {
-  let myEvent = new EventEmitter();
+
+
   mdns.on('response', function (response) {
     // console.log('Response found ! ', response.answers);
     hostnames.forEach(hostname => {
@@ -107,10 +109,15 @@ exports.listen = () => {
         let find = response.answers.find(answer => (answer.name === 'connection.local' || answer.name === 'ash-2.local') && answer.type === 'A');
         if (find !== undefined) {
           let playeradress = find.data;
-          if (overall_found[hostname].find(adress => playeradress === adress) === undefined)
-            overall_found[hostname].push(playeradress)
+          // if hostname doesnt exist push it
+          if (overall_found[hostname].find(adress => playeradress === adress) === undefined) {
+            overall_found[hostname].push(playeradress);
+            let object = {};
+            object[hostname] = playeradress;
+            myEvent.emit('new_hostname', object);
+          }
           // console.log('Found a ', hostname, ' on addresses', overall_found);
-          myEvent.emit('new_hostname', overall_found);
+
 
         }
       }
@@ -120,7 +127,11 @@ exports.listen = () => {
   });
   return myEvent;
 }
-
+exports.stop = () => {
+  overall_found = {};
+  mdns.removeAllListeners();
+  myEvent.removeAllListeners();
+}
 
 // lets query for an A record
 // mdns.query({
