@@ -4,6 +4,8 @@ Simple mDNS Listener to add and listen .local hostnames in your network compatib
 
 This script is tested on Windows 10.
 
+Base code credits to @Richie765 : https://github.com/Richie765/mdns-listener
+
 ## Configuration
 
 Edit the file named `.mdns-hosts`, place hostnames ending with `.local` on separate lines like so:
