@@ -4,7 +4,11 @@ Simple mDNS Listener to add and listen .local hostnames in your network compatib
 
 This script is tested on Windows 10.
 
-Base code credits to @Richie765 : https://github.com/Richie765/mdns-listener
+Base code credits goes to to @Richie765 : https://github.com/Richie765/mdns-listener
+
+## Installation
+
+`npm install @aminekun90/mdns-listener-advanced`
 
 ## Configuration
 
@@ -27,12 +31,29 @@ cd mdns-listener-advanced
 npm install
 ```
 
+## Usage
+
+You can use the function `mdns-listener.Listen()` like this:
+
+This example is from example.js file :
+
+```javascript
+const advanced_mdns = require("./mdns-listener");
+
+advanced_mdns.listen().on("new_hostname", found_hostnames => {
+  console.log("found_hostnames", found_hostnames);
+  // -- MORE CODE !
+
+  // --!
+});
+```
+
 ## Running manually
 
 Just run
 
 ```bash
-node index.js
+node example.js
 ```
 
 <!-- ## Autmatic startup on login (macOS)
@@ -56,23 +77,6 @@ Logfiles are available in
 
 - [ ] Remove a hostname if it's not available anymore
   <!-- - [ ] Automatic startup on login (Windows) -->
-
-## How to use
-
-You can use the function `mdns-listener.Listen()` like this:
-
-This example is from index.js file :
-
-```javascript
-const advanced_mdns = require("./mdns-listener");
-
-advanced_mdns.listen().on("new_hostname", found_hostnames => {
-  console.log("found_hostnames", found_hostnames);
-  // -- MORE CODE !
-
-  // --!
-});
-```
 
 ## SOME NOTES
 

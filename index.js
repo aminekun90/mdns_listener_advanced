@@ -1,3 +1,4 @@
+'use strict';
 const advanced_mdns = require('./mdns-listener');
 
 
