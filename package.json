@@ -7,8 +7,8 @@
   "dependencies": {
     "multicast-dns": "^6.1.0"
   },
-  "bin" : {
-    "mdns-listener" : "mdns-listener.js"
+  "bin": {
+    "mdns-listener": "mdns-listener.js"
   },
   "repository": {
     "type": "git",

@@ -1,37 +1,37 @@
-# mDNS Listener
+# mDNS Listener Advanced
 
-Simple mDNS Listener to add .local hostnames to your machine
+Simple mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
 
-This script is tested on macOS.
-
+This script is tested on Windows 10.
 
 ## Configuration
-Create a file named `~/.mdns-hosts`, place hostnames ending with `.local` on separate lines like so:
+
+Edit the file named `.mdns-hosts`, place hostnames ending with `.local` on separate lines like so:
 
 ```
 myhost1.local
 myhost2.local
 ```
 
-Whenever you change this file, you should restart the service.
+You can specify the hostnames that you want to detect !
 
+Whenever you change this file, you should restart the service.
 
 ## Installation
 
 ```bash
-git clone https://github.com/Richie765/mdns-listener
-cd mdns-listener
+git clone https://github.com/aminekun90/mdns_listener_advanced.git
+cd mdns-listener-advanced
 npm install
 ```
-
 
 ## Running manually
 
 Just run
+
 ```bash
 node mdns-listener.js
 ```
-
 
 ## Autmatic startup on login (macOS)
 
@@ -46,15 +46,20 @@ launchctl load ~/Library/LaunchAgents/mdns-listener.plist
 ```
 
 Logfiles are available in
-* /tmp/mdns-listener-error.log
-* /tmp/mdns-listener.log
 
+- /tmp/mdns-listener-error.log
+- /tmp/mdns-listener.log
+
+### Todo :
+
+- [ ] Automatic startup on login (Windows)
 
 ## Package formats
 
 Some notes that may be useful when changing the script.
 
 QUERY from macOS
+
 ```javascript
 { id: 0,
   type: 'query',
@@ -68,6 +73,7 @@ QUERY from macOS
 ```
 
 RESPONSE from macOS
+
 ```javascript
 { id: 0,
   type: 'response',
@@ -97,6 +103,7 @@ RESPONSE from macOS
 ```
 
 RESPONSE from this script
+
 ```javascript
 { id: 0,
   type: 'response',
@@ -112,3 +119,7 @@ RESPONSE from this script
   authorities: [],
   additionals: [] }
 ```
+
+## known / reported issues :
+
+- [ ] Not detecting avahi, zeroconf launched in the same machine
