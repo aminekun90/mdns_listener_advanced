@@ -1,5 +1,6 @@
 #!/usr/bin/env node --use_strict
 
+const EventEmitter = require('events');
 const mdns = require('multicast-dns')()
 // const dns = require('dns'); // not used anymore
 const os = require('os');
@@ -90,27 +91,33 @@ all_ips.forEach(ip => {
 
 // find all hostnames in the network
 let overall_found = {};
-mdns.on('response', function (response) {
-  // console.log('Response found ! ', response.answers);
-  hostnames.forEach(hostname => {
-    if (overall_found[hostname] === undefined) {
-      overall_found[hostname] = [];
-    }
-    let findHost = response.answers.find(answer => answer.name === hostname);
-    if (findHost !== undefined) {
-      let find = response.answers.find(answer => (answer.name === 'connection.local' || answer.name === 'ash-2.local') && answer.type === 'A');
-      if (find !== undefined) {
-        let playeradress = find.data;
-        if (overall_found[hostname].find(adress => playeradress === adress) === undefined)
-          overall_found[hostname].push(playeradress)
-        console.log('Found a ', hostname, ' on addresses', overall_found);
-
+exports.getAllHostnames = () => {
+  let myEvent = new EventEmitter();
+  mdns.on('response', function (response) {
+    // console.log('Response found ! ', response.answers);
+    hostnames.forEach(hostname => {
+      if (overall_found[hostname] === undefined) {
+        overall_found[hostname] = [];
       }
-    }
+      let findHost = response.answers.find(answer => answer.name === hostname);
+      if (findHost !== undefined) {
+        let find = response.answers.find(answer => (answer.name === 'connection.local' || answer.name === 'ash-2.local') && answer.type === 'A');
+        if (find !== undefined) {
+          let playeradress = find.data;
+          if (overall_found[hostname].find(adress => playeradress === adress) === undefined)
+            overall_found[hostname].push(playeradress)
+          // console.log('Found a ', hostname, ' on addresses', overall_found);
+          myEvent.emit('new_hostname', overall_found);
+
+        }
+      }
+
+    });
 
   });
+  return myEvent;
+}
 
-})
 
 // lets query for an A record
 // mdns.query({
@@ -119,3 +126,5 @@ mdns.on('response', function (response) {
 //     type: 'A'
 //   }]
 // })
+
+exports.overall_found = overall_found;

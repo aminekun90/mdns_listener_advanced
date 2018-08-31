@@ -1,6 +1,6 @@
 {
-  "name": "mdns-listener",
-  "version": "1.0.0",
+  "name": "mdns-listener-advanced",
+  "version": "1.2.0",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "Richard",
   "license": "MIT",
@@ -8,7 +8,7 @@
     "multicast-dns": "^6.1.0"
   },
   "bin": {
-    "mdns-listener": "mdns-listener.js"
+    "mdns-listener": "index.js"
   },
   "repository": {
     "type": "git",

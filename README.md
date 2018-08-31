@@ -32,7 +32,7 @@ npm install
 Just run
 
 ```bash
-node mdns-listener.js
+node index.js
 ```
 
 ## Autmatic startup on login (macOS)
