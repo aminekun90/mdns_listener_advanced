@@ -1,11 +1,11 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "Amine",
   "license": "MIT",
   "dependencies": {
-    "multicast-dns": "^6.1.0"
+    "multicast-dns": "^7.0.1"
   },
   "engines": {
     "node": ">=8.9.0"
