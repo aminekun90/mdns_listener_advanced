@@ -27,6 +27,8 @@ Whenever you change this file, you should restart the service.
 
 You can use the function `mdns-listener.Listen()` like this:
 
+- Start listening
+
 ```javascript
 const advanced_mdns = require("mdns-listener-advanced");
 
@@ -36,6 +38,12 @@ advanced_mdns.listen().on("new_hostname", found_hostnames => {
 
   // --!
 });
+```
+
+- Stop Listening
+
+```javascript
+advanced_mdns.stop();
 ```
 
 <!-- ## Autmatic startup on login (macOS)
