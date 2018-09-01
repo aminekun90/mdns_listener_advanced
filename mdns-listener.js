@@ -93,7 +93,7 @@ all_ips.forEach(ip => {
 let overall_found = {};
 let myEvent = new EventEmitter();
 /**
- * Listen to the network
+ * Listen to the network for hostnames
  */
 exports.listen = () => {
 
@@ -127,6 +127,9 @@ exports.listen = () => {
   });
   return myEvent;
 }
+/**
+ * Stop listening to network for hostnames
+ */
 exports.stop = () => {
   overall_found = {};
   mdns.removeAllListeners();
