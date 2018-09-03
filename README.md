@@ -12,7 +12,7 @@ Base code credits goes to to @Richie765 : https://github.com/Richie765/mdns-list
 
 ## Configuration
 
-Add and Edit the file named `.mdns-hosts` and append to your project, place hostnames ending with `.local` on separate lines like so:
+Add and Edit the file named `.mdns-hosts`, this file must be in your HOME directory for windows `[HDD]:\Users\<username>\.mdns-hosts` and for linux `~/.mdns-hosts`, place hostnames ending with `.local` on separate lines like so:
 
 ```
 myhost1.local
@@ -25,15 +25,17 @@ Whenever you change this file, you should restart the service.
 
 ## Usage
 
-You can use the function `mdns-listener.Listen()` like this:
+You can use the function `mdns.Listen()` like this:
 
 - Start listening
 
 ```javascript
-const advanced_mdns = require("mdns-listener-advanced");
-
-advanced_mdns.listen().on("new_hostname", found_hostnames => {
-  console.log("found_hostnames", found_hostnames);
+const advanced_mdns = require('./index');
+let mdns = new advanced_mdns();
+mdns.initialize();
+mdns.listen().on('new_hostname', (found_hostnames) => {
+    console.log('found_hostnames', found_hostnames)
+});
   // -- MORE CODE !
 
   // --!
@@ -43,7 +45,7 @@ advanced_mdns.listen().on("new_hostname", found_hostnames => {
 - Stop Listening
 
 ```javascript
-advanced_mdns.stop();
+mdn.stop();
 ```
 
 <!-- ## Autmatic startup on login (macOS)

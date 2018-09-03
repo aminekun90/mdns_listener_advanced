@@ -1,40 +1,14 @@
 #!/usr/bin/env node --use_strict
 
+'use strict';
 const EventEmitter = require('events');
 const mdns = require('multicast-dns')()
 // const dns = require('dns'); // not used anymore
 const os = require('os');
 const fs = require('fs');
 
-// Config
-
-const mdns_hosts = ".mdns-hosts";
-const interval = 60;
-
-// Set process name
-
-process.title = process.title = 'mdns-listener';
-
-// Get hostnames
-
-const hosts = fs.readFileSync(mdns_hosts, {
-  encoding: 'utf-8'
-});
-
-// console.log(hosts);
-
-const hostnames = hosts.split("\n")
-  .map(name => name.replace(/\#.*/, '')) // Remove comments
-  .map(name => name.trim()) // Trim lines
-  .filter(name => name.length > 0); // Remove empty lines
-
-console.log("Serving hostnames:", hostnames.join(', '));
-
-// Get all our ips
-
-var all_ips = [];
-
 function getMyIp() {
+  let all_ips = [];
   let ifaces = os.networkInterfaces();
   Object.keys(ifaces).forEach(function (ifname) {
     var alias = 0;
@@ -60,88 +34,105 @@ function getMyIp() {
       ++alias;
     });
   });
-}
-
-getMyIp();
-
-setInterval(getMyIp, interval * 1000);
-
-// Wait and respond to queries
-all_ips.forEach(ip => {
-  console.log('wait on ip :', ip);
-  mdns.on('query', function (query) {
-    console.log('got a query packet:', query)
-
-    if (query.questions[0] && query.questions[0].type === 'A') {
-      const name = query.questions[0].name;
-
-      if (hostnames.indexOf(name) >= 0) {
-        console.log(name, ' => ', ip);
-        mdns.respond([{
-          name: name,
-          type: 'A',
-          data: ip,
-          ttl: 120
-        }]); // Seconds
-      }
-    }
-  })
-});
+  return all_ips;
+};
 
 
-// find all hostnames in the network
-let overall_found = {};
-let myEvent = new EventEmitter();
-/**
- * Listen to the network for hostnames
- */
-exports.listen = () => {
+class Core {
+  /**
+   * 
+   * @param {*} mdns_hosts_path .mdns-fosts file path
+   * @param {*} refresh_interval interval
+   */
+  constructor(mdns_hosts_path = os.platform().startsWith('win') ?
+    process.env.HOMEPATH + '\\' + '.mdns-hosts' : process.env.HOME + '/' + '.mdns-hosts', refresh_interval = 60) {
+    this.mdns_hosts = mdns_hosts_path;
+    this.interval = refresh_interval;
+    this.all_ips = []
+    this.overall_found = {};
+    this.myEvent = new EventEmitter();
+    this.hostnames = [];
+  }
+  initialize() {
+    // Get hostnames
+    console.log('os', os.platform())
 
-
-  mdns.on('response', function (response) {
-    // console.log('Response found ! ', response.answers);
-    hostnames.forEach(hostname => {
-      if (overall_found[hostname] === undefined) {
-        overall_found[hostname] = [];
-      }
-      let findHost = response.answers.find(answer => answer.name === hostname);
-      if (findHost !== undefined) {
-        let find = response.answers.find(answer => (answer.name === 'connection.local' || answer.name === 'ash-2.local') && answer.type === 'A');
-        if (find !== undefined) {
-          let playeradress = find.data;
-          // if hostname doesnt exist push it
-          if (overall_found[hostname].find(adress => playeradress === adress) === undefined) {
-            overall_found[hostname].push(playeradress);
-            let object = {};
-            object[hostname] = playeradress;
-            myEvent.emit('new_hostname', object);
-          }
-          // console.log('Found a ', hostname, ' on addresses', overall_found);
-
-
-        }
-      }
-
+    console.log('Process.env', process.env.HOMEPATH)
+    const hosts = fs.readFileSync(this.mdns_hosts, {
+      encoding: 'utf-8'
     });
 
-  });
-  return myEvent;
-}
-/**
- * Stop listening to network for hostnames
- */
-exports.stop = () => {
-  overall_found = {};
-  mdns.removeAllListeners();
-  myEvent.removeAllListeners();
-}
+    this.hostnames = hosts.split("\n")
+      .map(name => name.replace(/\#.*/, '')) // Remove comments
+      .map(name => name.trim()) // Trim lines
+      .filter(name => name.length > 0); // Remove empty lines
 
-// lets query for an A record
-// mdns.query({
-//   questions: [{
-//     name: '_Gymix-player._tcp.local',
-//     type: 'A'
-//   }]
-// })
+    console.log("Serving hostnames:", this.hostnames.join(', '));
+    this.all_ips = getMyIp();
+    setInterval(getMyIp, this.interval * 1000);
 
-// exports.overall_found = overall_found;
+
+    // Wait and respond to queries
+    this.all_ips.forEach(ip => {
+      console.log('wait on ip :', ip);
+      mdns.on('query', (query) => {
+        console.log('got a query packet:', query)
+
+        if (query.questions[0] && query.questions[0].type === 'A') {
+          const name = query.questions[0].name;
+
+          if (this.hostnames.indexOf(name) >= 0) {
+            console.log(name, ' => ', ip);
+            mdns.respond([{
+              name: name,
+              type: 'A',
+              data: ip,
+              ttl: 120
+            }]); // Seconds
+          }
+        }
+      })
+    });
+  }
+
+  /**
+   * Listen to the network for hostnames
+   */
+  listen() {
+    mdns.on('response', (response) => {
+      // console.log('Response found ! ', response.answers);
+      this.hostnames.forEach(hostname => {
+        if (this.overall_found[hostname] === undefined) {
+          this.overall_found[hostname] = [];
+        }
+        let findHost = response.answers.find(answer => answer.name === hostname);
+        if (findHost !== undefined) {
+          let find = response.answers.find(answer => (answer.name === 'connection.local' || answer.name === 'ash-2.local') && answer.type === 'A');
+          if (find !== undefined) {
+            let playeradress = find.data;
+            // if hostname doesnt exist push it
+            if (this.overall_found[hostname].find(adress => playeradress === adress) === undefined) {
+              this.overall_found[hostname].push(playeradress);
+              let object = {};
+              object[hostname] = playeradress;
+              this.myEvent.emit('new_hostname', object);
+            }
+            // console.log('Found a ', hostname, ' on addresses', overall_found);
+
+
+          }
+        }
+
+      });
+
+    });
+    return this.myEvent;
+  }
+  stop() {
+    this.overall_found = {};
+    this.mdns.removeAllListeners();
+    this.myEvent.removeAllListeners();
+  }
+
+}
+module.exports = Core;
