@@ -45,7 +45,7 @@ mdns.listen().on('new_hostname', (found_hostnames) => {
 - Stop Listening
 
 ```javascript
-mdn.stop();
+mdns.stop();
 ```
 
 <!-- ## Autmatic startup on login (macOS)
