@@ -128,10 +128,19 @@ class Core {
     });
     return this.myEvent;
   }
+  /**
+   * Stop listening
+   */
   stop() {
     this.overall_found = {};
-    this.mdns.removeAllListeners();
-    this.myEvent.removeAllListeners();
+    // fix mdns undefined sometimes
+    if (mdns && mdns.removeAllListeners instanceof Function) {
+      mdns.removeAllListeners();
+    }
+    // fix myEvent undefined
+    if (this.myEvent && this.myEvent.removeAllListeners instanceof Function) {
+      this.myEvent.removeAllListeners();
+    }
   }
 
 }
