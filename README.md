@@ -11,7 +11,14 @@ Base code credits goes to @Richie765 : https://github.com/Richie765/mdns-listene
 `npm install @aminekun90/mdns-listener-advanced`
 
 ## Configuration
-
+### Method 1
+Provide hostnames list in the constructor like this :
+```javascript
+const advanced_mdns = require('./index');
+let mdns = new advanced_mdns(['myhost1.local','myhost2.local']);
+```
+The file should be created automatically.
+### Method 2
 Add and Edit the file named `.mdns-hosts`, this file must be in your HOME directory for windows `[HDD]:\Users\<username>\.mdns-hosts` and for linux `~/.mdns-hosts`, place hostnames ending with `.local` on separate lines like so:
 
 ```
@@ -32,6 +39,9 @@ You can use the function `mdns.Listen()` like this:
 ```javascript
 const advanced_mdns = require('./index');
 let mdns = new advanced_mdns();
+// If you don't have the file already created provide the hosts-----------------
+// let mdns = new advanced_mdns(['myhost1.local','myhost2.local']);          // |
+//------------------------------------------------------------------------------
 mdns.initialize();
 mdns.listen().on('new_hostname', (found_hostnames) => {
     console.log('found_hostnames', found_hostnames)
