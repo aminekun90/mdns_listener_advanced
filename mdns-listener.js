@@ -30,7 +30,7 @@ function getMyIp() {
                 all_ips.push(iface.address);
             }
 
-            ++alias;
+            // ++alias;
         });
     });
     return all_ips;
