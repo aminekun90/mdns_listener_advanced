@@ -14,7 +14,7 @@ Base code credits goes to @Richie765 : https://github.com/Richie765/mdns-listene
 ### Method 1
 Provide hostnames list in the constructor like this :
 ```javascript
-const advanced_mdns = require('./index');
+const advanced_mdns = require('mdns-listener-advanced');
 let mdns = new advanced_mdns(['myhost1.local','myhost2.local']);
 ```
 The file should be created automatically.
@@ -37,7 +37,7 @@ You can use the function `mdns.Listen()` like this:
 - Start listening
 
 ```javascript
-const advanced_mdns = require('./index');
+const advanced_mdns = require('mdns-listener-advanced');
 let mdns = new advanced_mdns();
 // If you don't have the file already created provide the hosts-----------------
 // let mdns = new advanced_mdns(['myhost1.local','myhost2.local']);          // |
@@ -45,8 +45,7 @@ let mdns = new advanced_mdns();
 mdns.initialize();
 mdns.listen().on('new_hostname', (found_hostnames) => {
     console.log('found_hostnames', found_hostnames)
-});
-  // -- MORE CODE !
+  // -- MORE CODE Here !
 
   // --!
 });
