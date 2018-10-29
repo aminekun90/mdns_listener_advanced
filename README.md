@@ -42,7 +42,8 @@ let mdns = new advanced_mdns();
 // If you don't have the file already created provide the hosts-----------------
 // let mdns = new advanced_mdns(['myhost1.local','myhost2.local']);          // |
 //------------------------------------------------------------------------------
-mdns.initialize(); // deprecated
+// mdns.initialize(); // deprecated
+//------------------------------------------------------------------------------
 mdns.listen().on('new_hostname', (found_hostnames) => {
     console.log('found_hostnames', found_hostnames)
   // -- MORE CODE Here !
