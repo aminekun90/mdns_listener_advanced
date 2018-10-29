@@ -41,7 +41,7 @@ class Core {
     /**
      * 
      * @param {*} list_hosts List of hosts to find ['myhost1.local','myhost2.local']
-     * @param {*} mdns_hosts_path .mdns-fosts file path
+     * @param {*} mdns_hosts_path .mdns-hosts file path if not provided will be created in HOME directory
      * @param {*} refresh_interval interval
      */
     constructor(list_hosts = [], mdns_hosts_path = os.platform().startsWith('win') ?
@@ -53,6 +53,7 @@ class Core {
         this.myEvent = new EventEmitter();
         console.log(list_hosts)
         this.hostnames = list_hosts;
+        this.initialize();
     }
     initialize() {
         // Get hostnames

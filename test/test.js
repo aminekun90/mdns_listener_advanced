@@ -7,7 +7,6 @@ const EventEmitter = require('events');
 describe('#Listen', function () {
     it('should return an event emmiter', function () {
         let mdns = new mdnsListner();
-        mdns.initialize();
         var result = mdns.listen();
         expect(result).to.instanceOf(EventEmitter);
     });
