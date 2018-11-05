@@ -8,7 +8,7 @@ Base code credits goes to @Richie765 : https://github.com/Richie765/mdns-listene
 
 ## Installation
 
-`npm install @aminekun90/mdns-listener-advanced`
+`npm install mdns-listener-advanced`
 
 ## Configuration
 ### Method 1
