@@ -4,26 +4,34 @@ Simple mDNS Listener to add and listen .local hostnames in your network compatib
 
 This script is tested on Windows 10, linux and mac os.
 
-Base code credits goes to @Richie765 : https://github.com/Richie765/mdns-listener
+This code is fully compatible with https://github.com/aminekun90/python_zeroconf_publisher you broadcast your device as you like with additional data
+
+Note: Core code credits goes to @Richie765 : https://github.com/Richie765/mdns-listener upgraded and edited to be compatible with a python publisher by @aminekun90
 
 ## Installation
 
 `npm install mdns-listener-advanced`
 
 ## Configuration
+
 ### Method 1
+
 Provide hostnames list in the constructor like this :
+
 ```javascript
-const advanced_mdns = require('mdns-listener-advanced');
-let mdns = new advanced_mdns(['myhost1.local','myhost2.local']);
+const advanced_mdns = require("mdns-listener-advanced");
+let mdns = new advanced_mdns(["myhost1", "myhost2"]);
 ```
-The file should be created automatically.
+
+The file `.mdns-hosts` is created automatically.
+
 ### Method 2
-Add and Edit the file named `.mdns-hosts`, this file must be in your HOME directory for windows `[HDD]:\Users\<username>\.mdns-hosts` and for linux `~/.mdns-hosts`, place hostnames ending with `.local` on separate lines like so:
+
+Add and Edit the file named `.mdns-hosts`, this file must be in your HOME directory for windows `[HDD]:\Users\<username>\.mdns-hosts` and for linux `~/.mdns-hosts`, place hostnames ending on separate lines like so:
 
 ```
-myhost1.local
-myhost2.local
+myhost1
+myhost2
 ```
 
 You can specify the hostnames that you want to detect !
@@ -32,20 +40,20 @@ Whenever you change this file, you should restart the service.
 
 ## Usage
 
-You can use the function `mdns.Listen()` like this:
+You can use the function `mdns.listen()` like this:
 
 - Start listening
 
 ```javascript
-const advanced_mdns = require('mdns-listener-advanced');
+const advanced_mdns = require("mdns-listener-advanced");
 let mdns = new advanced_mdns();
 // If you don't have the file already created provide the hosts-----------------
 // let mdns = new advanced_mdns(['myhost1.local','myhost2.local']);          // |
 //------------------------------------------------------------------------------
 // mdns.initialize(); // deprecated
 //------------------------------------------------------------------------------
-mdns.listen().on('new_hostname', (found_hostnames) => {
-    console.log('found_hostnames', found_hostnames)
+mdns.listen().on("new_hostname", (found_hostnames) => {
+  console.log("found_hostnames", found_hostnames);
   // -- MORE CODE Here !
 
   // --!
@@ -78,7 +86,7 @@ Logfiles are available in
 ### Todo :
 
 - [ ] Remove a hostname if it's not available anymore
-  <!-- - [ ] Automatic startup on login (Windows) -->
+<!-- - [ ] Automatic startup on login (Windows) -->
 
 ## SOME NOTES
 
@@ -145,6 +153,10 @@ RESPONSE from this script
   authorities: [],
   additionals: [] }
 ```
+
+## Next feature
+
+- custom type
 
 ## known / reported issues :
 
