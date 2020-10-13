@@ -1,5 +1,5 @@
 'use strict';
-const advanced_mdns = require('./mdns-listener');
+const advanced_mdns = require('./lib/mdns-listener');
 
 /**
  * Adds commas to a number

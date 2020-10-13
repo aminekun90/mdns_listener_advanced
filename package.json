@@ -11,7 +11,7 @@
     "node": ">=8.9.0"
   },
   "scripts": {
-    "test": "mocha --reporter spec"
+    "test": "mocha --reporter spec --exit"
   },
   "bin": {
     "mdns-listener": "index.js"

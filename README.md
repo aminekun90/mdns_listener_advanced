@@ -52,7 +52,7 @@ let mdns = new advanced_mdns();
 //------------------------------------------------------------------------------
 // mdns.initialize(); // deprecated
 //------------------------------------------------------------------------------
-mdns.listen().on("new_hostname", (found_hostnames) => {
+mdns.listen().on("response", (found_hostnames) => {
   console.log("found_hostnames", found_hostnames);
   // -- MORE CODE Here !
 
@@ -66,97 +66,22 @@ mdns.listen().on("new_hostname", (found_hostnames) => {
 mdns.stop();
 ```
 
-<!-- ## Autmatic startup on login (macOS)
+### Details :
 
-```bash
-cp mdns-listener.plist-sample mdns-listener.plist
-
-# edit mdns-listener.plist to match the paths on your system
-
-cp mdns-listener.plist ~/Library/LaunchAgents/
-
-launchctl load ~/Library/LaunchAgents/mdns-listener.plist
-```
-
-Logfiles are available in
-
-- /tmp/mdns-listener-error.log
-- /tmp/mdns-listener.log -->
+| Functions                              | Params           | Type                | Description                                                                                  |
+| -------------------------------------- | ---------------- | ------------------- | -------------------------------------------------------------------------------------------- |
+| `new advanced_mdns(1)`                 | list_hosts       | `Array<string>`     | List of hostnames                                                                            |
+| `new advanced_mdns(,2)`                | usePath          | `boolean`           | Force use of path instead of provided list                                                   |
+| `new advanced_mdns(...,3)`             | mdns_hosts_path  | `string`            | Full path of your .mdns-hosts                                                                |
+| `new advanced_mdns(...,4)`             | refresh_interval | `number`            | Not used                                                                                     |
+| `.listen().on(event,callback(object))` | event            | `string`            | To catch a response event when set to `"response"`<br/> or error event when set to `"error"` |
+|                                        | callback         | `function(object)`  | callback to do custome code                                                                  |
+|                                        | object           | `object` or `Error` | a received object i.e `{MyDevice1:{...}}` or Error object containing a message               |
+| `.stop()`                              |                  |                     | to stop the event listener                                                                   |
 
 ### Todo :
 
-- [ ] Remove a hostname if it's not available anymore
-<!-- - [ ] Automatic startup on login (Windows) -->
-
-## SOME NOTES
-
-Some notes that may be useful when changing the script.
-
-QUERY from macOS
-
-```javascript
-{ id: 0,
-  type: 'query',
-  flags: 0,
-  questions:
-   [ { name: 'myhost.local', type: 'A', class: 1 },
-     { name: 'myhost.local', type: 'AAAA', class: 1 } ],
-  answers: [],
-  authorities: [],
-  additionals: [] }
-```
-
-RESPONSE from macOS
-
-```javascript
-{ id: 0,
-  type: 'response',
-  flags: 1024,
-  questions: [],
-  answers:
-   [ { name: 'myhost.local',
-       type: 'AAAA',
-       class: 1,
-       ttl: 120,
-       flush: true,
-       data: 'fe80::xxxx:xxxx:xxxx:xxxx' },
-     { name: 'myhost.local',
-       type: 'A',
-       class: 1,
-       ttl: 120,
-       flush: true,
-       data: '192.168.0.10' } ],
-  authorities: [],
-  additionals:
-   [ { name: 'myhost.local',
-       type: 'NSEC',
-       class: 1,
-       ttl: 120,
-       flush: true,
-       data: <Buffer ....> } ] }
-```
-
-RESPONSE from this script
-
-```javascript
-{ id: 0,
-  type: 'response',
-  flags: 0,
-  questions: [],
-  answers:
-   [ { name: 'myhost.local',
-       type: 'A',
-       class: 1,
-       ttl: 0,
-       flush: false,
-       data: '192.168.0.10' } ],
-  authorities: [],
-  additionals: [] }
-```
-
-## Next feature
-
-- custom type
+(Nothing for now)
 
 ## known / reported issues :
 
