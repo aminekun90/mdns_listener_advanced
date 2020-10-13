@@ -68,16 +68,14 @@ mdns.stop();
 
 ### Details :
 
-| Functions                              | Params           | Type                | Description                                                                                  |
-| -------------------------------------- | ---------------- | ------------------- | -------------------------------------------------------------------------------------------- |
-| `new advanced_mdns(1)`                 | list_hosts       | `Array<string>`     | List of hostnames                                                                            |
-| `new advanced_mdns(,2)`                | usePath          | `boolean`           | Force use of path instead of provided list                                                   |
-| `new advanced_mdns(...,3)`             | mdns_hosts_path  | `string`            | Full path of your .mdns-hosts                                                                |
-| `new advanced_mdns(...,4)`             | refresh_interval | `number`            | Not used                                                                                     |
-| `.listen().on(event,callback(object))` | event            | `string`            | To catch a response event when set to `"response"`<br/> or error event when set to `"error"` |
-|                                        | callback         | `function(object)`  | callback to do custome code                                                                  |
-|                                        | object           | `object` or `Error` | a received object i.e `{MyDevice1:{...}}` or Error object containing a message               |
-| `.stop()`                              |                  |                     | to stop the event listener                                                                   |
+| Functions                               | Params          | Type                    | Description                                                                                  |
+| --------------------------------------- | --------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
+| `new advanced_mdns(list_hosts)`         | list_hosts      | `Array<string>`         | List of hostnames                                                                            |
+| `new advanced_mdns(..,mdns_hosts_path)` | mdns_hosts_path | `string`                | Full path of your .mdns-hosts                                                                |
+| `.listen().on(event,callback(object))`  | event           | `string`                | To catch a response event when set to `"response"`<br/> or error event when set to `"error"` |
+|                                         | callback        | `function(object)`      | callback to do custome code                                                                  |
+|                                         | object          | `object` or `exception` | a received object i.e `{MyDevice1:{...}}` or Error object containing a message               |
+| `.stop()`                               |                 |                         | to stop the event listener                                                                   |
 
 ### Todo :
 
