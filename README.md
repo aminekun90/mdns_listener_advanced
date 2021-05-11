@@ -4,7 +4,7 @@ Simple mDNS Listener to add and listen .local hostnames in your network compatib
 
 This script is tested on Windows 10, linux and mac os.
 
-This code is fully compatible with https://github.com/aminekun90/python_zeroconf_publisher you broadcast your device as you like with additional data
+I recommand using python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow ;) I can make you an offer.
 
 Note: Core code credits goes to @Richie765 : https://github.com/Richie765/mdns-listener upgraded and edited to be compatible with a python publisher by @aminekun90
 
@@ -88,3 +88,9 @@ mdns.stop();
 ## Want to contribute or have any suggestions or questions:
 
 Contact me on Linkedin [Here](https://www.linkedin.com/in/mohamed-amine-b-377aa3b8/).
+
+## Buy me a coffee :
+
+Paypal : [HERE](https://www.paypal.me/aminebouzahar)
+Bitcoin wallet : `bc1q26gqgnjjz7yswt3g5pstdllssvvgsykqpxxyzl`
+Dogecoin wallet : `DSimv4kgjdWP6Z9PqJyKj28Jvg4zqutnta`
