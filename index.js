@@ -1,10 +1,7 @@
-'use strict';
-const advanced_mdns = require('./lib/mdns-listener');
+"use strict";
+const advanced_mdns = require("./lib/mdns-listener");
 
 /**
- * Adds commas to a number
- * @param {number} number
- * @param {string} locale
- * @return {string}
+ * Class advanced_mdns
  */
 module.exports = advanced_mdns;

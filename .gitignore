@@ -3,3 +3,4 @@ dist
 mdns-listener.plist
 .vs
 .vscode
+package-lock.json

@@ -84,3 +84,7 @@ mdns.stop();
 ## known / reported issues :
 
 - [x] Not detecting avahi, zeroconf launched in the same machine (fixed)
+
+## Want to contribute or have any suggestions or questions:
+
+Contact me on Linkedin [Here](https://www.linkedin.com/in/mohamed-amine-b-377aa3b8/).
