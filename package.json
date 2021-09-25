@@ -1,11 +1,11 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "license": "MIT",
   "dependencies": {
-    "multicast-dns": "^7.2.2"
+    "multicast-dns": "^7.2.3"
   },
   "engines": {
     "node": ">=8.9.0"
@@ -35,6 +35,6 @@
   "homepage": "https://github.com/aminekun90/mdns_listener_advanced#readme",
   "devDependencies": {
     "chai": "^4.3.4",
-    "mocha": "^8.4.0"
+    "mocha": "^9.1.2"
   }
 }
