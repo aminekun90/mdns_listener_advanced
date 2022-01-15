@@ -6,7 +6,7 @@ This script is tested on Windows 10, linux and mac os.
 
 I recommand using python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow ;) I can make you an offer.
 
-Note: Core code credits goes to @Richie765 : https://github.com/Richie765/mdns-listener upgraded and edited to be compatible with a python publisher by @aminekun90
+Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code still exist.
 
 ## Installation
 
@@ -55,7 +55,7 @@ let mdns = new advanced_mdns();
 mdns.listen().on("response", (found_hostnames) => {
   console.log("found_hostnames", found_hostnames);
   // -- MORE CODE Here !
-
+  // mdns.stop(); // you can stop as soon as you find something or leave it runing forever
   // --!
 });
 ```
@@ -68,22 +68,35 @@ mdns.stop();
 
 ### Details :
 
-| Functions                               | Params          | Type                    | Description                                                                                  |
-| --------------------------------------- | --------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
-| `new advanced_mdns(list_hosts)`         | list_hosts      | `Array<string>`         | List of hostnames                                                                            |
-| `new advanced_mdns(..,mdns_hosts_path)` | mdns_hosts_path | `string`                | Full path of your .mdns-hosts                                                                |
-| `.listen().on(event,callback(object))`  | event           | `string`                | To catch a response event when set to `"response"`<br/> or error event when set to `"error"` |
-|                                         | callback        | `function(object)`      | callback to do custome code                                                                  |
-|                                         | object          | `object` or `exception` | a received object i.e `{MyDevice1:{...}}` or Error object containing a message               |
-| `.stop()`                               |                 |                         | to stop the event listener                                                                   |
+| Functions                               | Params          | Type               | Description                                        |
+| --------------------------------------- | --------------- | ------------------ | -------------------------------------------------- |
+| `new advanced_mdns(list_hosts)`         | list_hosts      | `Array<string>`    | List of hostnames                                  |
+| `new advanced_mdns(..,mdns_hosts_path)` | mdns_hosts_path | `string`           | Full path of your .mdns-hosts                      |
+| `.listen().on(event,callback(object))`  | event           | `string`           | To catch a response event when set to `"response"` |
+|                                         | callback        | `function(object)` | callback to do custome code                        |
+|                                         | object          | `object`           | a received object i.e `{MyDevice1:{...}}`          |
+| `.stop()`                               |                 |                    | to stop the event listener                         |
 
-### Todo :
+### Debug :
 
-(Nothing for now)
+If an error occured while initializing the mdns advanced you can open an issue on our github and help us to solve the issue by joining the logs by adding an option param :
+
+```javascript
+const advanced_mdns = require("mdns-listener-advanced");
+let mdns = new advanced_mdns();
+let options = {
+  debug:true
+};
+mdns.listen().on("response", (found_hostnames,false,options) => {
+  console.log("found_hostnames", found_hostnames);
+  mdns.stop();
+});
+```
 
 ## known / reported issues :
 
 - [x] Not detecting avahi, zeroconf launched in the same machine (fixed)
+- [x] The method initialize() does not exist anymore since 2.4.3 (wont-fix)
 
 ## Want to contribute or have any suggestions or questions:
 
@@ -92,5 +105,3 @@ Contact me on Linkedin [Here](https://www.linkedin.com/in/mohamed-amine-b-377aa3
 ## Buy me a coffee :
 
 Paypal : [HERE](https://www.paypal.me/aminebouzahar)
-Bitcoin wallet : `bc1q26gqgnjjz7yswt3g5pstdllssvvgsykqpxxyzl`
-Dogecoin wallet : `DSimv4kgjdWP6Z9PqJyKj28Jvg4zqutnta`
