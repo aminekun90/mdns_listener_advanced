@@ -100,8 +100,4 @@ mdns.listen().on("response", (found_hostnames,false,options) => {
 
 ## Want to contribute or have any suggestions or questions:
 
-Contact me on Linkedin [Here](https://www.linkedin.com/in/mohamed-amine-b-377aa3b8/).
-
-## Buy me a coffee :
-
-Paypal : [HERE](https://www.paypal.me/aminebouzahar)
+Contact me on Linkedin [Here](https://www.linkedin.com/in/amine-bouzahar/).
