@@ -2,7 +2,7 @@
 
 Simple mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
 
-This script is tested on Windows 10, linux and mac os.
+This script is tested on Windows 10, Linux and Mac Os Monterey 12.4.
 
 I recommand using python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow ;) I can make you an offer.
 
