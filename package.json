@@ -1,6 +1,6 @@
 {
   "name": "@aminekun90/mdns-listener-advanced",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "license": "MIT",
