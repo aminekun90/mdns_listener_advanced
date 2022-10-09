@@ -10,15 +10,15 @@ import logdown from 'logdown';
  * MDNS Advanced Core Class
  */
 export class Core {
-  NPMURL = 'https://www.npmjs.com/package/mdns-listener-advanced';
-  hostnames;
-  mdnsHostsFile;
-  debug = false;
-  error = false;
-  myEvent = new EventEmitter();
-  overallFound = {};
-  mdns = mDNS();
-  logger = logdown("MDNS ADVANCED");
+  private static NPMURL = 'https://www.npmjs.com/package/mdns-listener-advanced';
+  private hostnames;
+  private mdnsHostsFile;
+  private debug = false;
+  private error = false;
+  private myEvent = new EventEmitter();
+  private mdns = mDNS();
+  private logger = logdown("MDNS ADVANCED");
+
   /**
    * Constructor
    * @param {string[]} hostsList List of hosts to find ['myhost1','myhost2']
@@ -80,7 +80,7 @@ export class Core {
       if (existsSync(this.mdnsHostsFile)) {
         return this.__getHosts();
       }
-      throw new Error(`Provide hostnames or path to hostnames ! More at ${this.NPMURL}`);
+      throw new Error(`Provide hostnames or path to hostnames ! More at ${Core.NPMURL}`);
     }
   }
 
@@ -121,7 +121,7 @@ export class Core {
       });
       this.myEvent.emit(
         'error',
-        new Error(`An error occured while initializing mdns advanced ! More at ${this.NPMURL}`),
+        new Error(`An error occured while initializing mdns advanced ! More at ${Core.NPMURL}`),
       );
       return this.myEvent;
     }
@@ -160,7 +160,6 @@ export class Core {
    */
   public stop() {
     this.logger.info('Stopping mdns listener...');
-    this.overallFound = {};
     // fix mdns undefined sometimes
     if (this.mdns && this.mdns.removeAllListeners instanceof Function) {
       this.mdns.removeAllListeners();
