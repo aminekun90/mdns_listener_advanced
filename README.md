@@ -69,8 +69,8 @@ mdns.stop();
 | Functions                                      | Params          | Type               | Description                                        |
 | ---------------------------------------------- | --------------- | ------------------ | -------------------------------------------------- |
 | `new mdnsListenerAdvanced.Core(['MyDevice2']);`| hostsList       | `Array<string>`    | List of hostnames                                  |
+| `new advanced_mdns(..,mdnsHostsPath)`          | mdnsHostsPath   | `string`           | Full path of your .mdns-hosts                      |
 |`new advanced_mdns(..,..,options)`              | options         | `{debug:boolean}`  | Enable debug                                       |
-| `new advanced_mdns(..,mdns_hosts_path)`        | mdnsHostsPath   | `string`           | Full path of your .mdns-hosts                      |
 | `.listen().on(event,callback(object))`         | event           | `string`           | To catch a response event when set to `"response"` |
 |                                                | callback        | `function(object)` | callback to do custome code                        |
 |                                                | object          | `object`           | a received object i.e `{MyDevice1:{...}}`          |
