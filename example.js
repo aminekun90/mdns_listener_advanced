@@ -1,6 +1,11 @@
-const advanced_mdns = require("./index");
-let mdns = new advanced_mdns(["MyDevice2"]);
-mdns.listen().on("response", (found_hostnames) => {
-  console.log("found_hostnames", found_hostnames);
+const advancedMDNs = require('./dist/cjs/index');
+const mdns = new advancedMDNs.Core(['MyDevice2']);
+const event = mdns.listen();
+event.on('response', (found_hostnames) => {
+  console.log('found_hostnames', found_hostnames);
+  // mdns.stop();
+});
+event.on('error', (error) => {
+  console.log('error', error);
   // mdns.stop();
 });

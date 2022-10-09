@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "commonjs",
+    "baseUrl": "./",
+    "paths": {
+      "@mdns-listener/*": ["src/*"],
+      "@mdns-listener/types/*": ["src/types/*"]
+    },
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*", "src/types/**/*", "**/*"],
+  "exclude": ["node_modules", "**/__tests__/*"]
+}
