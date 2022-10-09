@@ -1,3 +1,3 @@
-import { Core } from './lib/Core';
+import { Core } from './Core';
 
 export { Core };

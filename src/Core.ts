@@ -1,13 +1,13 @@
-import mDNS from 'multicast-dns';
 import { platform, networkInterfaces } from 'os';
 import { existsSync, readFileSync } from 'fs';
 import { EventEmitter } from 'events';
 import { Options } from '@mdns-listener/types/types';
+import mDNS from 'multicast-dns';
 import logdown from 'logdown';
 
 
 /**
- * MDNS Class
+ * MDNS Advanced Core Class
  */
 export class Core {
   NPMURL = 'https://www.npmjs.com/package/mdns-listener-advanced';
@@ -18,18 +18,18 @@ export class Core {
   myEvent = new EventEmitter();
   overallFound = {};
   mdns = mDNS();
-  logger = logdown("logger");
+  logger = logdown("MDNS ADVANCED");
   /**
    * Constructor
-   * @param {string[]} listHosts List of hosts to find ['myhost1','myhost2']
+   * @param {string[]} hostsList List of hosts to find ['myhost1','myhost2']
    * @param {string} mdnsHostsPath .mdns-hosts file path if not provided will be created in HOME directory
    * @param {Options} [options] more options
    * @public
    */
-  constructor(listHosts: string[], mdnsHostsPath?: string, options?: Options) {
-    this.hostnames = listHosts ? listHosts : [];
+  constructor(hostsList: string[], mdnsHostsPath?: string, options?: Options) {
+    this.hostnames = hostsList ? hostsList : [];
     this.mdnsHostsFile = mdnsHostsPath;
-
+    this.logger.state.isEnabled = true;
     this.debug = !!options && !!options.debug;
     this.__initialize();
   }
@@ -48,7 +48,7 @@ export class Core {
    * Initialize mdns
    * @private
    */
-  __initialize() {
+  private __initialize() {
     try {
       this.hostnames = this.__getHosts()
         .split('\n')
@@ -66,7 +66,7 @@ export class Core {
    * @return {string}
    * @private
    */
-  __getHosts(): string {
+  private __getHosts(): string {
     if (this.mdnsHostsFile && existsSync(this.mdnsHostsFile)) {
       return readFileSync(this.mdnsHostsFile, {
         encoding: 'utf-8',
@@ -91,7 +91,7 @@ export class Core {
    * @deprecated
    * @private
    */
-  __getMyIp() {
+  private __getMyIp(): Array<string> {
     const allIPs: string[] = [];
     const ifaces = networkInterfaces();
 
@@ -114,7 +114,7 @@ export class Core {
    * @return {EventEmitter}
    * @public
    */
-  listen() {
+  public listen(): EventEmitter {
     if (this.error) {
       this.myEvent.on('error', (e) => {
         this.logger.info(e.message);
@@ -158,7 +158,7 @@ export class Core {
    * Stop listening and kills the emmiter
    * @public
    */
-  stop() {
+  public stop() {
     this.logger.info('Stopping mdns listener...');
     this.overallFound = {};
     // fix mdns undefined sometimes
