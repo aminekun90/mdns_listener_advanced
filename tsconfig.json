@@ -7,7 +7,6 @@
       "@mdns-listener/*": ["src/*"],
       "@mdns-listener/types/*": ["src/types/*"]
     },
-    "outDir": "./build",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

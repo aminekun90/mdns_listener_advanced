@@ -1,4 +1,4 @@
-const advancedMDNs = require('./build/index');
+const advancedMDNs = require('./dist/cjs/index');
 const mdns = new advancedMDNs.Core(['MyDevice2']);
 const event = mdns.listen();
 event.on('response', (found_hostnames) => {
