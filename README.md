@@ -14,13 +14,7 @@ I recommand using python publisher https://github.com/aminekun90/python_zeroconf
 Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code still exist, recently updated to typescript.
 
 ## Installation
-
 `npm install mdns-listener-advanced`
-
-## Configuration
-
-TBD
-
 ## Usage
 
 ![JS](https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E)
@@ -64,13 +58,35 @@ event.on('error', (error) => {
 mdns.stop();
 ```
 
+## Configuration
+
+### Method 1
+Provide hostnames list in the constructor like this :
+
+```javascript
+var mdnsListenerAdvanced = require("mdns-listener-advanced");
+const mdns = new mdnsListenerAdvanced.Core(['MyDevice1','MyDevice2']);
+```
+The file .mdns-hosts is created automatically.
+
+#### Method 2
+Add and Edit the file named .mdns-hosts, this file must be in your HOME directory for windows ``[HDD]:\Users\<username>\.mdns-hosts`` and for linux/Mac ``~/.mdns-hosts``, place hostnames ending on separate lines like so:
+```
+myhost1
+myhost2
+```
+You can specify the hostnames that you want to detect !
+
+Whenever you change this file, you should restart the service.
+
+
 ### Details :
 
 | Functions                                      | Params          | Type               | Description                                        |
-| ---------------------------------------------- | --------------- | ------------------ | -------------------------------------------------- |
+|------------------------------------------------|-----------------|--------------------|----------------------------------------------------|
 | `new mdnsListenerAdvanced.Core(['MyDevice2']);`| hostsList       | `Array<string>`    | List of hostnames                                  |
-| `new advanced_mdns(..,mdnsHostsPath)`          | mdnsHostsPath   | `string`           | Full path of your .mdns-hosts                      |
-|`new advanced_mdns(..,..,options)`              | options         | `{debug:boolean}`  | Enable debug                                       |
+| `new advanced_mdns(..,mdnsHostsPath)`          | mdnsHostsPath   | `string`           | Full path of your .mdns-hosts  (not available)     |
+| `new advanced_mdns(..,..,options)`             | options         | `{debug:boolean}`  | Enable debug                                       |
 | `.listen().on(event,callback(object))`         | event           | `string`           | To catch a response event when set to `"response"` |
 |                                                | callback        | `function(object)` | callback to do custome code                        |
 |                                                | object          | `object`           | a received object i.e `{MyDevice1:{...}}`          |
