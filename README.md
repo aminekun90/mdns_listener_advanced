@@ -23,25 +23,58 @@ TBD
 
 ## Usage
 
-**TBD**
+![JS](https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E)
+
+```javascript
+var mdnsListenerAdvanced = require("mdns-listener-advanced");
+const mdns = new mdnsListenerAdvanced.Core(['MyDevice2']);
+const event = mdns.listen();
+event.on('response', (found_hostnames) => {
+  console.log('found_hostnames', found_hostnames);
+  // mdns.stop();// To stop the listener
+});
+event.on('error', (error) => {
+  console.log('error', error);
+  // mdns.stop();// To stop the listener
+});
+
+```
+**:warning: Being tested**
+
+![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) 
+
+```typescript
+import { Core } from "@mdns-listener-advanced";
+const mdns = new Core(['MyDevice2']);
+const event = mdns.listen();
+event.on('response', (found_hostnames) => {
+  console.log('found_hostnames', found_hostnames);
+  // mdns.stop();// To stop the listener
+});
+event.on('error', (error) => {
+  console.log('error', error);
+  // mdns.stop();// To stop the listener
+});
+
+```
+
+- To Stop listening to the event use :
+
+```javascript
+mdns.stop();
+```
+
 ### Details :
 
-**TBD**
-
-**Deprecated since version 3.0.0**
-
-| Functions                               | Params          | Type               | Description                                        |
-| --------------------------------------- | --------------- | ------------------ | -------------------------------------------------- |
-| `new advanced_mdns(list_hosts)`         | list_hosts      | `Array<string>`    | List of hostnames                                  |
-| `new advanced_mdns(..,mdns_hosts_path)` | mdns_hosts_path | `string`           | Full path of your .mdns-hosts                      |
-| `.listen().on(event,callback(object))`  | event           | `string`           | To catch a response event when set to `"response"` |
-|                                         | callback        | `function(object)` | callback to do custome code                        |
-|                                         | object          | `object`           | a received object i.e `{MyDevice1:{...}}`          |
-| `.stop()`                               |                 |                    | to stop the event listener                         |
-
-### Debug :
-
-**TBD**
+| Functions                                      | Params          | Type               | Description                                        |
+| ---------------------------------------------- | --------------- | ------------------ | -------------------------------------------------- |
+| `new mdnsListenerAdvanced.Core(['MyDevice2']);`| hostsList       | `Array<string>`    | List of hostnames                                  |
+|`new advanced_mdns(..,..,options)`              | options         | `{debug:boolean}`  | Enable debug                                       |
+| `new advanced_mdns(..,mdns_hosts_path)`        | mdnsHostsPath   | `string`           | Full path of your .mdns-hosts                      |
+| `.listen().on(event,callback(object))`         | event           | `string`           | To catch a response event when set to `"response"` |
+|                                                | callback        | `function(object)` | callback to do custome code                        |
+|                                                | object          | `object`           | a received object i.e `{MyDevice1:{...}}`          |
+| `.stop()`                                      |                 |                    | to stop the event listener                         |
 
 ## known / reported issues :
 
