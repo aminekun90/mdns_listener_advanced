@@ -4,6 +4,10 @@
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "license": "MIT",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "umd:main": "dist/umd/index.js",
+  "types": "dist/types/index.d.js",
   "dependencies": {
     "@types/multicast-dns": "^7.2.1",
     "logdown": "^3.3.1",
@@ -25,9 +29,12 @@
     "package": "npm run build && npm pack",
     "test": "jest --no-cache --runInBand",
     "test:cov": "jest --coverage --no-cache --runInBand",
-    "addscope": "node tools/packagejson name @aminekun90/mdns_listener_advanced",
+    "addscope": "node tools/packagejson name @aminekun90/mdns-listener-advanced",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "repository": {
     "type": "git",
