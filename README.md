@@ -1,8 +1,9 @@
-# mDNS Listener Advanced Typescript Implementation v3.0.0
+# mDNS Listener Advanced 
+[![npm package](https://img.shields.io/badge/npm%20i-mdns--listener--advanced-brightgreen)](https://www.npmjs.com/package/mdns-listener-advanced) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases) [![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions) [![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE)
+
+**:warning: Upcoming Major update** From the version 3.0.0 is a Typescript Implementation it is not tested yet currentely in dev and testing on Mac OS 12.6
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
- 
-**:warning: Major update :** This script is not tested yet currentely in dev on Mac OS 12.6 
 
 I recommand using python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow ;) I can make you an offer.
 
