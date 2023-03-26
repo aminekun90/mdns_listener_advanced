@@ -1,0 +1,15 @@
+{
+  "name": "javascript-example",
+  "version": "1.0.0",
+  "description": "mdns-advanced require for javascript",
+  "main": "example.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node example.js"
+  },
+  "author": "aminekun90",
+  "license": "ISC",
+  "dependencies": {
+    "mdns-listener-advanced": "^3.0.8"
+  }
+}

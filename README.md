@@ -4,12 +4,12 @@
 
 [![Release & Publish](https://github.com/aminekun90/mdns_listener_advanced/actions/workflows/publish.yml/badge.svg?branch=master)](https://github.com/aminekun90/mdns_listener_advanced/actions/workflows/publish.yml)
 
-**:warning: This is a Major update** From the version 3.0.0 this package is using a Typescript Implementation it is currently being tested on Mac OS 13.2 and windows 11
-If you have an issue on the current version please go back to the previous stable version and be free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues) 
+**:warning: This is a Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 13.2 and windows 11 and ubuntu
+If you have any issue feel free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues) 
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
 
-I recommand using python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow ;) I can make you an offer.
+I recommand using python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow :wink: I can make you an offer.
 
 Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code still exist, recently updated to typescript.
 
@@ -35,12 +35,12 @@ event.on('error', (error) => {
 });
 
 ```
-**:warning: Being tested**
+**:white_check_mark: Fully tested**
 
 ![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) 
 
 ```typescript
-import { Core } from "@mdns-listener-advanced";
+import { Core } from "mdns-listener-advanced";
 const mdns = new Core(['MyDevice2']);
 const event = mdns.listen();
 event.on('response', (found_hostnames) => {

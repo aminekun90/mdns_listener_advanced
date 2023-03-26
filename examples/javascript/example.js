@@ -1,6 +1,4 @@
-// replace bellow with
-// const mdnsListenerAdvanced = require("mdns-listener-advanced");
-const mdnsListenerAdvanced = require('./dist/cjs/index');
+const mdnsListenerAdvanced = require("mdns-listener-advanced");
 
 const mdns = new mdnsListenerAdvanced.Core(['MyDevice2']);
 const event = mdns.listen();
