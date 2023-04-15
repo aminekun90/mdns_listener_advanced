@@ -1,11 +1,13 @@
 import { Core } from "mdns-listener-advanced";
-const mdns = new Core(['MyDevice2']);
+const mdns = new Core(['MyDevice2'], null, {
+  debug: false
+});
 const event = mdns.listen();
-event.on('response', (found_hostnames:any) => {
-  console.log('found_hostnames', found_hostnames);
+event.on('response', (found_hostnames: any) => {
+  mdns.info('found_hostnames', found_hostnames);
   // mdns.stop();// To stop the listener
 });
-event.on('error', (error:any) => {
-  console.log('error', error);
+event.on('error', (error: any) => {
+  mdns.info('error', error);
   // mdns.stop();// To stop the listener
 });
