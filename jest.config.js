@@ -11,4 +11,8 @@ module.exports = {
       tsconfig: 'tsconfig.json',
     },
   },
+  moduleNameMapper: {
+    '@mdns-listener/(.*)': '<rootDir>/src/$1',
+  },
+  moduleDirectories: ['<rootDir>/node_modules', '<rootDir>'],
 };
