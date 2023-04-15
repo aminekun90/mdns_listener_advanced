@@ -1,7 +1,7 @@
 import { platform, networkInterfaces } from 'os';
 import { existsSync, readFileSync } from 'fs';
 import { EventEmitter } from 'events';
-import { Options } from '@mdns-listener/types/types';
+import { NPM_URL, Options } from '@mdns-listener/types';
 import mDNS from 'multicast-dns';
 import logdown from 'logdown';
 
@@ -10,38 +10,51 @@ import logdown from 'logdown';
  * MDNS Advanced Core Class
  */
 export class Core {
-  private static NPMURL = 'https://www.npmjs.com/package/mdns-listener-advanced';
   private hostnames;
   private mdnsHostsFile;
-  private debug = false;
+  private debugEnabled = false;
   private error = false;
-  private myEvent = new EventEmitter();
-  private mdns = mDNS();
-  private logger = logdown("MDNS ADVANCED");
-
-  /**
-   * Constructor
-   * @param {string[]} hostsList List of hosts to find ['myhost1','myhost2']
-   * @param {string} mdnsHostsPath .mdns-hosts file path if not provided will be created in HOME directory
-   * @param {Options} [options] more options
-   * @public
-   */
-  constructor(hostsList: string[], mdnsHostsPath?: string, options?: Options) {
-    this.hostnames = hostsList ? hostsList : [];
+ /**
+  * Constructor
+  * 
+  * @param hostsList 
+  * @param mdnsHostsPath 
+  * @param options 
+  * @param logger 
+  * @param mdns 
+  * @param myEvent 
+  */
+  constructor(
+    hostsList: string[],
+    mdnsHostsPath?: string|null,
+    options?: Options,
+    private logger: logdown.Logger = logdown("MDNS ADVANCED"),
+    private mdns = mDNS(),
+    private myEvent = new EventEmitter()
+  ) {
+    this.hostnames = hostsList || [];
     this.mdnsHostsFile = mdnsHostsPath;
     this.logger.state.isEnabled = true;
-    this.debug = !!options && !!options.debug;
+    this.debugEnabled = !!options?.debug;
     this.__initialize();
   }
 
   /**
    * Console debugging function
-   * @param  {...any} str
+   * @param  {...any} args
    */
-  consoleDebug(...str: any[]) {
-    if (this.debug) {
-      this.logger.debug.apply(this.logger, str);
+  debug(...args: any[]) {
+    if (this.debugEnabled) {
+      this.logger.debug.apply(this.logger, args);
     }
+  }
+
+  /**
+   * Console info function
+   * @param  {...any} args
+   */
+  info(...args: any[]) {
+      this.logger.info.apply(this.logger, args);
   }
 
   /**
@@ -56,7 +69,7 @@ export class Core {
         .map((name) => name.trim()) // Trim lines
         .filter((name) => name.length > 0); // Remove empty lines
     } catch (error) {
-      this.consoleDebug(error);
+      this.debug(error);
       this.error = true;
     }
   }
@@ -80,13 +93,13 @@ export class Core {
       if (existsSync(this.mdnsHostsFile)) {
         return this.__getHosts();
       }
-      throw new Error(`Provide hostnames or path to hostnames ! More at ${Core.NPMURL}`);
+      throw new Error(`Provide hostnames or path to hostnames ! Report this error ${NPM_URL}`);
     }
   }
 
   /**
    * Get Current Device IP
-   * Not used For this version 2.3.1
+   * Not used after version 2.3.1
    * @return {Array<string>}
    * @deprecated
    * @private
@@ -119,41 +132,47 @@ export class Core {
       this.myEvent.on('error', (e) => {
         this.logger.info(e.message);
       });
-      this.myEvent.emit(
-        'error',
-        new Error(`An error occured while initializing mdns advanced ! More at ${Core.NPMURL}`),
-      );
+      const errorMessage = `An error occurred while initializing mdns advanced ! Report this error ${NPM_URL}`;
+      this.myEvent.emit('error', new Error(errorMessage));
       return this.myEvent;
     }
     this.logger.info('Looking for hostnames...', this.hostnames);
-    this.mdns.on('response', (response: any) => {
-      this.hostnames.forEach((hostname) => {
-        const findHost = response.answers.filter((answer: any) => {
-          return answer.name === '_' + hostname + '._tcp.local' || answer.name === '_' + hostname + '._udp.local';
-        });
-        if (findHost !== undefined) {
-          const find = response.answers.find((answer: any) => {
-            return (
-              (answer.name === '_' + hostname + '._tcp.local' || answer.name === '_' + hostname + '._udp.local') &&
-              answer.type === 'TXT'
-            );
-          });
-          if (find !== undefined) {
-            const deviceData = find.data;
-            const object: any = {};
-            object[hostname] = {};
-            deviceData.forEach((buffer: any) => {
-              const elem = buffer.toString('utf8').split('=');
-              object[hostname][elem[0]] = elem[1];
-            });
-            this.myEvent.emit('response', object);
-          }
-        }
-      });
-    });
+
+    this.mdns.on('response', this.handleResponse.bind(this));
     return this.myEvent;
   }
 
+  /**
+   * Handle mdns response 
+   * 
+   * @param response 
+   */
+  private handleResponse (response: any) {
+    this.hostnames.forEach((hostname) => {
+      const findHost = response.answers.filter((answer: any) =>
+        answer.name === `_${hostname}._tcp.local` || answer.name === `_${hostname}._udp.local`
+      );
+
+      if (findHost.length > 0) {
+        const find = response.answers.find((answer: any) =>
+          (answer.name === `_${hostname}._tcp.local` || answer.name === `_${hostname}._udp.local`) &&
+          answer.type === 'TXT'
+        );
+
+        if (find) {
+          const deviceData = find.data;
+          const object = { [hostname]: {} as any };
+
+          deviceData.forEach((buffer: any) => {
+            const [key, value] = buffer.toString('utf8').split('=');
+            object[hostname][key] = value;
+          });
+
+          this.myEvent.emit('response', object);
+        }
+      }
+    });
+  }
   /**
    * Stop listening and kills the emmiter
    * @public
