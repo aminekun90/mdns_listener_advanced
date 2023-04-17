@@ -4,7 +4,8 @@
     "module": "commonjs",
     "baseUrl": "./",
     "paths": {
-      "@mdns-listener/*": ["src/*"]
+      "@mdns-listener/*": ["src/*"],
+      "*": ["node_modules/*"]
     },
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -12,7 +13,7 @@
     "moduleResolution": "node",
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "src/types/**/*", "**/*"],
+  "include": ["./**/*.ts", "./**/*.tsx"],
   "exclude": ["node_modules", "**/__tests__/*", "examples/**/*"],
   "ts-node": {
     "require": ["tsconfig-paths/register"]

@@ -96,7 +96,7 @@ Whenever you change this file, you should restart the service.
 
 ## known / reported issues :
 
-**TBD**
+- Issue on version 3.0.9 module not found
 
 #### Want to contribute or have any suggestions or questions?
 

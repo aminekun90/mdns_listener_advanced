@@ -10,23 +10,23 @@ import logdown from 'logdown';
  * MDNS Advanced Core Class
  */
 export class Core {
-  private hostnames;
-  private mdnsHostsFile;
-  private debugEnabled = false;
-  private error = false;
- /**
-  * Constructor
-  * 
-  * @param hostsList 
-  * @param mdnsHostsPath 
-  * @param options 
-  * @param logger 
-  * @param mdns 
-  * @param myEvent 
-  */
+  private hostnames: Array<string>;
+  private mdnsHostsFile: string | null | undefined;
+  private debugEnabled: boolean = false;
+  private error: boolean = false;
+  /**
+   * Constructor
+   * 
+   * @param hostsList 
+   * @param mdnsHostsPath 
+   * @param options 
+   * @param logger 
+   * @param mdns 
+   * @param myEvent 
+   */
   constructor(
     hostsList: string[],
-    mdnsHostsPath?: string|null,
+    mdnsHostsPath?: string | null,
     options?: Options,
     private logger: logdown.Logger = logdown("MDNS ADVANCED"),
     private mdns = mDNS(),
@@ -54,7 +54,7 @@ export class Core {
    * @param  {...any} args
    */
   info(...args: any[]) {
-      this.logger.info.apply(this.logger, args);
+    this.logger.info.apply(this.logger, args);
   }
 
   /**
@@ -147,7 +147,7 @@ export class Core {
    * 
    * @param response 
    */
-  private handleResponse (response: any) {
+  private handleResponse(response: any) {
     this.hostnames.forEach((hostname) => {
       const findHost = response.answers.filter((answer: any) =>
         answer.name === `_${hostname}._tcp.local` || answer.name === `_${hostname}._udp.local`

@@ -28,7 +28,7 @@ module.exports = {
     extensions: ['.ts', '.js', '.tsx', '.jsx'],
     mainFields: ['module', 'browser', 'main'],
     alias: {
-      "@mdns-listener":path.resolve(__dirname,'../src')
+      "@mdns-listener":path.resolve(__dirname,"../",'src')
     },
     fallback: {
       fs: false,

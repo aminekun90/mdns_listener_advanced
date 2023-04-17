@@ -14,6 +14,6 @@
     "typescript": "^5.0.2"
   },
   "dependencies": {
-    "mdns-listener-advanced": "^3.0.9"
+    "mdns-listener-advanced": "^3.0.10"
   }
 }
