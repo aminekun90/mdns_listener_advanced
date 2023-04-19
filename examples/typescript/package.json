@@ -1,6 +1,6 @@
 {
   "name": "typescript-example",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "mdns-advanced import and usage for typescript projects",
   "main": "index.js",
   "scripts": {

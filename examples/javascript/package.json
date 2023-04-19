@@ -1,6 +1,6 @@
 {
   "name": "javascript-example",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "mdns-advanced require for javascript",
   "main": "example.js",
   "scripts": {

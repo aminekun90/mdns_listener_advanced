@@ -1,4 +1,4 @@
-import { Core } from "mdns-listener-advanced";
+const Core = require("mdns-listener-advanced").Core;
 
 const mdns = new Core(['MyDevice2'],null,{
   debug:false
