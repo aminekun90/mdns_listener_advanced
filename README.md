@@ -98,12 +98,12 @@ Whenever you change this file, you should restart the service.
 
 - Issue on version 3.0.9 module not found (Fixed since 3.0.11)
 - Keeping eye on some Security issues ( will be patched when patched new version of those packages is available): 
-  - Prototype Pollution in lodash Critical
-  - glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex High
+  - <span style="color:red;">Prototype Pollution in lodash **Critical** : wont fix because lodash team are stuborn and insist that [npm audit is broken](https://github.com/gulpjs/gulp/issues/2201#issuecomment-401614368)</span>
+  - glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex High (Fixed)
   - yargs-parser Vulnerable to Prototype Pollution Moderate
-  - Memory Exposure in concat-stream Moderate
-  - Regular Expression Denial of Service (ReDoS) in braces Low
-  - Regular Expression Denial of Service in braces Low
+  - Memory Exposure in concat-stream Moderate (Fixed)
+  - Regular Expression Denial of Service (ReDoS) in braces Low (Fixed)
+  - Regular Expression Denial of Service in braces Low (Fixed)
 
 #### Want to contribute or have any suggestions or questions?
 

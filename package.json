@@ -17,6 +17,7 @@
     "node": ">=8.9.0"
   },
   "scripts": {
+    "preinstall": "([ ! -f package-lock.json ] && npm install --package-lock-only --ignore-scripts --no-audit); npx npm-force-resolutions",
     "postinstall": "husky install",
     "prepublishOnly": "pinst --disable",
     "postpublish": "pinst --enable",
@@ -62,6 +63,7 @@
   },
   "homepage": "https://github.com/aminekun90/mdns_listener_advanced#readme",
   "devDependencies": {
+    "@jest/globals": "^29.5.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
     "husky": "^8.0.3",
@@ -84,5 +86,11 @@
   ],
   "peerDependencies": {
     "module": "*"
+  },
+  "overrides": {
+    "glob-parent": "^6.0.2",
+    "yargs-parser": "^5.0.1",
+    "concat-stream": "^2.0.0",
+    "micromatch": "^4.0.5"
   }
 }
