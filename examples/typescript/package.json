@@ -11,9 +11,10 @@
   "license": "ISC",
   "devDependencies": {
     "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.2"
   },
   "dependencies": {
-    "mdns-listener-advanced": "^3.0.10"
+    "mdns-listener-advanced": "^3.0.11"
   }
 }

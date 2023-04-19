@@ -2,20 +2,22 @@
   "compilerOptions": {
     "target": "es2022",
     "module": "commonjs",
-    "baseUrl": "./",
+    "lib": ["es2022"],
+    "baseUrl": ".",
     "paths": {
-      "@mdns-listener/*": ["src/*"],
-      "*": ["node_modules/*"]
+      "@mdns-listener/*": ["./src/*"],
+      "*": ["./node_modules/*"]
     },
+    "allowSyntheticDefaultImports": true, 
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "moduleResolution": "node",
-    "skipLibCheck": true
+    "skipLibCheck": true,
   },
-  "include": ["./**/*.ts", "./**/*.tsx"],
-  "exclude": ["node_modules", "**/__tests__/*", "examples/**/*"],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/__tests__/*", "examples/**/*"]
 }

@@ -10,6 +10,6 @@
   "author": "aminekun90",
   "license": "ISC",
   "dependencies": {
-    "mdns-listener-advanced": "^3.0.10"
+    "mdns-listener-advanced": "^3.0.11"
   }
 }

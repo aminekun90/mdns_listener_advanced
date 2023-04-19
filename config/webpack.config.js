@@ -6,7 +6,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, '../dist/umd'),
     filename: 'index.js',
-    library: 'exampleTypescriptPackage',
+    library: 'mdns-listener-advanced',
     libraryTarget: 'umd',
     globalObject: 'this',
   },
@@ -26,9 +26,9 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.js', '.tsx', '.jsx'],
-    mainFields: ['module', 'browser', 'main'],
+    mainFields: ['browser', 'module', 'main'],
     alias: {
-      "@mdns-listener":path.resolve(__dirname,"../",'src')
+      '@mdns-listener': path.resolve(__dirname, '../src/'),
     },
     fallback: {
       fs: false,

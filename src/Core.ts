@@ -1,7 +1,7 @@
 import { platform, networkInterfaces } from 'os';
 import { existsSync, readFileSync } from 'fs';
 import { EventEmitter } from 'events';
-import { NPM_URL, Options } from '@mdns-listener/types';
+import { NPM_URL, Options } from './types';
 import mDNS from 'multicast-dns';
 import logdown from 'logdown';
 
@@ -190,4 +190,4 @@ export class Core {
   }
 }
 
-export default Core;
+

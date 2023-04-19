@@ -1,6 +1,6 @@
-const mdnsListenerAdvanced = require("mdns-listener-advanced");
+import { Core } from "mdns-listener-advanced";
 
-const mdns = new mdnsListenerAdvanced.Core(['MyDevice2'],null,{
+const mdns = new Core(['MyDevice2'],null,{
   debug:false
 });
 const event = mdns.listen();

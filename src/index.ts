@@ -1,3 +1,1 @@
-import { Core } from '@mdns-listener/Core';
-
-export { Core };
+export { Core } from './Core';
