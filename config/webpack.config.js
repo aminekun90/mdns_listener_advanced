@@ -31,6 +31,7 @@ module.exports = {
       '@mdns-listener': path.resolve(__dirname, '../src/'),
     },
     fallback: {
+      util: require.resolve("util/"),
       fs: false,
       os: false,
       buffer: false,

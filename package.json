@@ -16,6 +16,7 @@
     "logdown": "^3.3.1",
     "multicast-dns": "^7.2.5",
     "rimraf": "^5.0.0",
+    "util": "^0.12.5",
     "uuid": "^9.0.0"
   },
   "engines": {
