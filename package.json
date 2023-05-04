@@ -1,6 +1,6 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "3.0.13",
+  "version": "3.1.0",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "license": "MIT",
@@ -9,18 +9,23 @@
   "umd:main": "dist/umd/index.js",
   "types": "dist/types/index.d.js",
   "dependencies": {
+    "@types/bonjour": "^3.5.10",
     "@types/multicast-dns": "^7.2.1",
+    "@types/uuid": "^9.0.1",
+    "bonjour": "^3.5.0",
     "logdown": "^3.3.1",
     "multicast-dns": "^7.2.5",
-    "rimraf": "^5.0.0"
+    "rimraf": "^5.0.0",
+    "uuid": "^9.0.0"
   },
   "engines": {
     "node": ">=8.9.0"
   },
   "scripts": {
-    "postinstall": "npx husky install -y",
+    "postinstall": "npx husky install",
     "prepublishOnly": "pinst --disable",
     "postpublish": "pinst --enable",
+    "start": "ts-node src/example.ts",
     "start:ts": "cd examples/typescript && npm i && ts-node example.ts",
     "start:js": "cd examples/javascript && npm i && node example.js",
     "build": "npm run build:cjs && npm run build:esm && npm run build:umd && npm run build:types",
@@ -91,7 +96,7 @@
   },
   "overrides": {
     "glob-parent": "^6.0.2",
-    "yargs-parser": "^5.0.1",
+    "yargs-parser": "^21.1.1",
     "concat-stream": "^2.0.0",
     "micromatch": "^4.0.5"
   }

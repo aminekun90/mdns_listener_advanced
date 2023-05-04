@@ -14,12 +14,20 @@ jest.mock('multicast-dns', () => {
       }
     });
   });
+jest.mock('bonjour', () => {
+    return jest.fn(() => {
+      return {
+        
+      }
+    });
+  });
 import mDNS from 'multicast-dns';
+import bonjour from 'bonjour';
 
 describe("Core", () => {
-    const hostsList: string[] = [];
-    const core = new Core(hostsList);
     const mdnsMock = mDNS as jest.MockedClass<any>;
+    const bonjourMock = bonjour as jest.MockedClass<any>;
+    const hostsList: string[] = [];
     
     beforeAll(done => {
         done();
@@ -29,16 +37,18 @@ describe("Core", () => {
     });
     it("should be initialized", () => {
         expect(() => {
-            return new Core(hostsList);
+            return new Core(['mock']);
         }).not.toThrowError();
     });
     it("should throw an error when hostnames are not provided", () => {
+        const core = new Core(hostsList);
         expect(() => (core as any).__getHosts()).toThrowError(`Provide hostnames or path to hostnames ! Report this error ${NPM_URL}`);
     });
 
     describe('listen', () => {
         let myEvent: EventEmitter;
         let mdns: any;
+        let bonjour:any;
         let logger: any;
         let error: any;
         let hostnames: string[];
@@ -47,6 +57,7 @@ describe("Core", () => {
         beforeEach(() => {
             myEvent = new EventEmitter();
             mdns = mdnsMock();
+            bonjour  = bonjourMock();
             logger = {
                 state: {
                     isEnabled: false,
@@ -55,7 +66,7 @@ describe("Core", () => {
             };
             error = null;
             hostnames = ['example'];
-            core = new Core(hostnames, undefined, undefined, logger, mdns, myEvent);
+            core = new Core(hostnames, undefined, undefined, logger, mdns, myEvent,bonjour);
         });
 
         afterEach(() => {

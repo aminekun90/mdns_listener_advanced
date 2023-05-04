@@ -9,9 +9,11 @@ If you have any issue feel free to open an issue [here](https://github.com/amine
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
 
-I recommand using python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow :wink: I can make you an offer.
+I recommand using this python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow :wink: I can make you an offer.
 
-Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code still exist, recently updated to typescript.
+- **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
+
+Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code still exist, and since version 3.0.0 it updated to typescript.
 
 ## Installation
 `npm install mdns-listener-advanced`
@@ -81,7 +83,38 @@ You can specify the hostnames that you want to detect !
 
 Whenever you change this file, you should restart the service.
 
+### Publish and Unpublish a hostname
 
+To publish a hostname you can use this example :
+
+```typescript
+import { Core } from "mdns-listener-advanced";
+const ref = "MyDevice2";
+const mdns = new Core();
+mdns.publish(ref);
+mdns.unpublishAll();// You can unpublish using this function
+```
+
+Output:
+
+```bash
+ℹ️ MDNS ADVANCED A hostname have been published with options {
+  port: 3000,
+  name: 'MyDevice2',
+  type: 'TXT',
+  txt: {
+    id: '"510f56fb-cb61-45d6-8e01-be4ed49405bb"',
+    ipv4: '"192.168.2.11"'
+  }
+}
+```
+Note that a warning will appear if you initialise the Core of mdns-listener-advanced without provifing a hosname list or .hostnames file path.
+
+```bash
+⚠️ MDNS ADVANCED Hostnames or path to hostnames is not provided, listening to a host is compromised!
+```
+
+- At the moment you cannot unpublish services undividually or by hostname and there might be a way using the included bonjour library.
 ### Details :
 
 | Functions                                      | Params          | Type               | Description                                        |
@@ -93,6 +126,8 @@ Whenever you change this file, you should restart the service.
 |                                                | callback        | `function(object)` | callback to do custome code                        |
 |                                                | object          | `object`           | a received object i.e `{MyDevice1:{...}}`          |
 | `.stop()`                                      |                 |                    | to stop the event listener                         |
+| `.publish(hostname)`                           | hostname        | `string`           | to publish an mdns host protocol                   |
+| `.unpublishAll()`                              |                 |                    | to unpublish all mdns host protocol                |
 
 ## known / reported issues :
 

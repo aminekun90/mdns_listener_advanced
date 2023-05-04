@@ -3,7 +3,10 @@ import { existsSync, readFileSync } from 'fs';
 import { EventEmitter } from 'events';
 import { NPM_URL, Options } from './types';
 import mDNS from 'multicast-dns';
+import bonjour from 'bonjour';
 import logdown from 'logdown';
+
+import { v4 as uuidv4, v1 } from 'uuid';
 
 
 /**
@@ -25,12 +28,13 @@ export class Core {
    * @param myEvent 
    */
   constructor(
-    hostsList: string[],
+    hostsList?: string[],
     mdnsHostsPath?: string | null,
     options?: Options,
     private logger: logdown.Logger = logdown("MDNS ADVANCED"),
     private mdns = mDNS(),
-    private myEvent = new EventEmitter()
+    private myEvent = new EventEmitter(),
+    private publisher = bonjour(),
   ) {
     this.hostnames = hostsList || [];
     this.mdnsHostsFile = mdnsHostsPath;
@@ -65,9 +69,12 @@ export class Core {
     try {
       this.hostnames = this.__getHosts()
         .split('\n')
-        .map((name) => name.replace(/\#.*/, '')) // Remove comments
+        .map((name) => name.replace(/#.*/, '')) // Remove comments
         .map((name) => name.trim()) // Trim lines
         .filter((name) => name.length > 0); // Remove empty lines
+      if(!this.hostnames.length){
+        this.logger.warn("Hosts are empty");
+      }
     } catch (error) {
       this.debug(error);
       this.error = true;
@@ -93,35 +100,58 @@ export class Core {
       if (existsSync(this.mdnsHostsFile)) {
         return this.__getHosts();
       }
+      this.logger.warn("Hostnames or path to hostnames is not provided, listening to a host is compromised!");
       throw new Error(`Provide hostnames or path to hostnames ! Report this error ${NPM_URL}`);
     }
   }
 
   /**
    * Get Current Device IP
-   * Not used after version 2.3.1
    * @return {Array<string>}
-   * @deprecated
    * @private
    */
-  private __getMyIp(): Array<string> {
-    const allIPs: string[] = [];
+  private getLocalIpAddress(): string | undefined {
     const ifaces = networkInterfaces();
-
-    Object.keys(ifaces).forEach((ifname) => {
-      ifaces[ifname]?.forEach((iface: any) => {
-        if ('IPv4' !== iface.family || iface.internal !== false) {
-          // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
-          return;
+    for (const name of Object.keys(ifaces)) {
+      const networkInterface = ifaces[name];
+      if (networkInterface) {
+        for (const address of networkInterface) {
+          if (!address.internal && address.family === 'IPv4' && !address.address.startsWith('169.')) {
+            return address.address;
+          }
         }
-        if (allIPs.find((thisip) => thisip === iface.address) !== undefined) {
-          allIPs.push(iface.address);
-        }
-      });
-    });
-    return allIPs;
+      }
+    }
+    return undefined;
+  }
+  /**
+    * 
+    * @param name
+    */
+  public publish(name: string) {
+    const options = {
+      port: 3000,
+      name: name,
+      type: "TXT",
+      txt: {
+        "uuid": `"${uuidv4()}"`,
+        "ipv4": JSON.stringify(this.getLocalIpAddress())
+      },
+    } as bonjour.ServiceOptions;
+    const bonjourService = this.publisher.publish(options);
+    this.info("A hostname have been published with options",options);
+    this.debug(bonjourService);
+    return bonjourService;
   }
 
+  /**
+   * 
+   */
+  public unpublishAll() {
+    this.publisher.unpublishAll();
+    this.info("All hostnames have been unpublished");
+
+  }
   /**
    * Listen to the network for hostnames
    * @return {EventEmitter}
@@ -130,16 +160,30 @@ export class Core {
   public listen(): EventEmitter {
     if (this.error) {
       this.myEvent.on('error', (e) => {
-        this.logger.info(e.message);
+        this.info(e.message);
       });
-      const errorMessage = `An error occurred while initializing mdns advanced ! Report this error ${NPM_URL}`;
+      const errorMessage = `An error occurred while trying to listen to mdns ! Report this error ${NPM_URL}`;
       this.myEvent.emit('error', new Error(errorMessage));
       return this.myEvent;
     }
-    this.logger.info('Looking for hostnames...', this.hostnames);
+    this.info('Looking for hostnames...', this.hostnames);
 
     this.mdns.on('response', this.handleResponse.bind(this));
     return this.myEvent;
+  }
+
+  private handleBufferData(dataBuffer: Buffer) {
+    let str = dataBuffer.toString('utf8');
+    this.info(str);
+    const propertiesMatch = str.match(/(\w+)=(\"[^\"]*\"|\S+)/g);
+    const properties: any = {};
+    if (propertiesMatch) {
+      propertiesMatch.forEach((prop) => {
+        const [key, value] = prop.split('=');
+        properties[key] = value.replace(/"/g, '');
+      });
+    }
+    return properties;
   }
 
   /**
@@ -148,28 +192,24 @@ export class Core {
    * @param response 
    */
   private handleResponse(response: any) {
+    const findHosts: Array<any> = [];
     this.hostnames.forEach((hostname) => {
-      const findHost = response.answers.filter((answer: any) =>
-        answer.name === `_${hostname}._tcp.local` || answer.name === `_${hostname}._udp.local`
-      );
+      response.answers.filter(
+        (a: any) => (
+          a.data
+          && Array.isArray(a.data)
+          && a.name.includes(hostname)
+        )).forEach((a: any) => {
+          findHosts.push({
+            name: a.name,
+            type: a.type,
+            data: this.handleBufferData(a.data)
+          })
+        });
 
-      if (findHost.length > 0) {
-        const find = response.answers.find((answer: any) =>
-          (answer.name === `_${hostname}._tcp.local` || answer.name === `_${hostname}._udp.local`) &&
-          answer.type === 'TXT'
-        );
-
-        if (find) {
-          const deviceData = find.data;
-          const object = { [hostname]: {} as any };
-
-          deviceData.forEach((buffer: any) => {
-            const [key, value] = buffer.toString('utf8').split('=');
-            object[hostname][key] = value;
-          });
-
-          this.myEvent.emit('response', object);
-        }
+      
+      if (findHosts.length) {
+        this.myEvent.emit('response', findHosts);
       }
     });
   }
@@ -178,7 +218,7 @@ export class Core {
    * @public
    */
   public stop() {
-    this.logger.info('Stopping mdns listener...');
+    this.info('Stopping mdns listener...');
     // fix mdns undefined sometimes
     if (this.mdns && this.mdns.removeAllListeners instanceof Function) {
       this.mdns.removeAllListeners();
