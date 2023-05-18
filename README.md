@@ -108,7 +108,7 @@ Output:
   }
 }
 ```
-Note that a warning will appear if you initialise the Core of `mdns-listener-advanced` without provifing a hosname list or `~/.mdns-hosts` file path.
+Note that a warning will appear if you initialise the Core of `mdns-listener-advanced` without providing a hostname list or `~/.mdns-hosts` file path.
 
 ```bash
 ⚠️ MDNS ADVANCED Hostnames or path to hostnames is not provided, listening to a host is compromised!
