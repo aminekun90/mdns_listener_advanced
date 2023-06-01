@@ -72,7 +72,7 @@ export class Core {
         .map((name) => name.replace(/#.*/, '')) // Remove comments
         .map((name) => name.trim()) // Trim lines
         .filter((name) => name.length > 0); // Remove empty lines
-      if(!this.hostnames.length){
+      if (!this.hostnames.length) {
         this.logger.warn("Hosts are empty");
       }
     } catch (error) {
@@ -91,8 +91,8 @@ export class Core {
       return readFileSync(this.mdnsHostsFile, {
         encoding: 'utf-8',
       });
-    } else if (this.hostnames && this.hostnames.length) {
-      return this.hostnames && this.hostnames.join('\r\n');
+    } else if (this.hostnames?.length) {
+      return this.hostnames?.join('\r\n');
     } else {
       this.mdnsHostsFile = platform().startsWith('win')
         ? process.env.HOMEPATH + '\\' + '.mdns-hosts'
@@ -124,8 +124,9 @@ export class Core {
     }
     return undefined;
   }
+
   /**
-    * 
+    * Publish a host using bonjour protocol
     * @param name
     */
   public publish(name: string) {
@@ -139,19 +140,19 @@ export class Core {
       },
     } as bonjour.ServiceOptions;
     const bonjourService = this.publisher.publish(options);
-    this.info("A hostname have been published with options",options);
+    this.info("A hostname have been published with options", options);
     this.debug(bonjourService);
     return bonjourService;
   }
 
   /**
-   * 
+   * Unpublish the publisher
    */
   public unpublishAll() {
     this.publisher.unpublishAll();
     this.info("All hostnames have been unpublished");
-
   }
+
   /**
    * Listen to the network for hostnames
    * @return {EventEmitter}
@@ -172,10 +173,14 @@ export class Core {
     return this.myEvent;
   }
 
+  /**
+   * Handle buffer data and transform them to a json object
+   * @param dataBuffer 
+   * @returns 
+   */
   private handleBufferData(dataBuffer: Buffer) {
     let str = dataBuffer.toString('utf8');
-    this.info(str);
-    const propertiesMatch = str.match(/(\w+)=(\"[^\"]*\"|\S+)/g);
+    const propertiesMatch = str.match(/(\w+)=("[^"]*"|\S+)/g);
     const properties: any = {};
     if (propertiesMatch) {
       propertiesMatch.forEach((prop) => {
@@ -207,12 +212,13 @@ export class Core {
           })
         });
 
-      
+
       if (findHosts.length) {
         this.myEvent.emit('response', findHosts);
       }
     });
   }
+
   /**
    * Stop listening and kills the emmiter
    * @public
