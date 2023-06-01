@@ -99,6 +99,7 @@
     "glob-parent": "^6.0.2",
     "yargs-parser": "^21.1.1",
     "concat-stream": "^2.0.0",
-    "micromatch": "^4.0.5"
+    "micromatch": "^4.0.5",
+    "lodash.template": "^4.5.0"
   }
 }
