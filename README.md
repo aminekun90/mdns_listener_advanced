@@ -1,10 +1,10 @@
 # mDNS Listener Advanced
  
-[![npm package](https://img.shields.io/badge/npm%20i-mdns--listener--advanced-brightgreen)](https://www.npmjs.com/package/mdns-listener-advanced) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases) [![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions) [![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE)
+[![npm package](https://img.shields.io/badge/npm%20i-mdns--listener--advanced-brightgreen)](https://www.npmjs.com/package/mdns-listener-advanced) 
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/aminekun90/mdns_listener_advanced/graphs/commit-activity) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases) [![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions) [![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE)
 
-[![Release & Publish](https://github.com/aminekun90/mdns_listener_advanced/actions/workflows/publish.yml/badge.svg?branch=master)](https://github.com/aminekun90/mdns_listener_advanced/actions/workflows/publish.yml)
 
-**:warning: This is a Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 13.2 and windows 11 and ubuntu
+**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 13.3.1(a) and windows 11 and ubuntu 18
 If you have any issue feel free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues) 
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
@@ -13,7 +13,7 @@ I recommand using this python publisher https://github.com/aminekun90/python_zer
 
 - **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
 
-Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code still exist, and since version 3.0.0 it updated to typescript.
+Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code might still exist.
 
 ## Installation
 `npm install mdns-listener-advanced`
@@ -108,7 +108,7 @@ Output:
   }
 }
 ```
-Note that a warning will appear if you initialise the Core of mdns-listener-advanced without provifing a hosname list or .hostnames file path.
+Note that a warning will appear if you initialise the Core of `mdns-listener-advanced` without providing a hostname list or `~/.mdns-hosts` file path.
 
 ```bash
 ⚠️ MDNS ADVANCED Hostnames or path to hostnames is not provided, listening to a host is compromised!
@@ -128,12 +128,14 @@ Note that a warning will appear if you initialise the Core of mdns-listener-adva
 | `.stop()`                                      |                 |                    | to stop the event listener                         |
 | `.publish(hostname)`                           | hostname        | `string`           | to publish an mdns host protocol                   |
 | `.unpublishAll()`                              |                 |                    | to unpublish all mdns host protocol                |
-
-## known / reported issues :
+## Known / Reported issues :
+- TBD
+## Fixed major security issues :
 
 - Issue on version 3.0.9 module not found (Fixed since 3.0.11)
 - Keeping eye on some Security issues ( will be patched when patched new version of those packages is available): 
-  - <span style="color:red;">Prototype Pollution in lodash **Critical** : Will not fix because lodash team are stuborn and insist that [npm audit is broken](https://github.com/gulpjs/gulp/issues/2201#issuecomment-401614368)</span>
+  - ~~**<span style="color:red;">Prototype Pollution in lodash **Critical** : Will not fix because lodash team are stuborn and insist that [npm audit is broken](https://github.com/gulpjs/gulp/issues/2201#issuecomment-401614368)</span>**~~
+  - Prototype Pollution in lodash **Critical** : workaround forced upgrade `"lodash.template": "^4.5.0"`
   - glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex High (Fixed)
   - yargs-parser Vulnerable to Prototype Pollution Moderate (Fixed)
   - Memory Exposure in concat-stream Moderate (Fixed)
