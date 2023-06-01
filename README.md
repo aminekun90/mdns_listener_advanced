@@ -128,12 +128,14 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 | `.stop()`                                      |                 |                    | to stop the event listener                         |
 | `.publish(hostname)`                           | hostname        | `string`           | to publish an mdns host protocol                   |
 | `.unpublishAll()`                              |                 |                    | to unpublish all mdns host protocol                |
-
-## known / reported issues :
+## Known / Reported issues :
+- TBD
+## Fixed major security issues :
 
 - Issue on version 3.0.9 module not found (Fixed since 3.0.11)
 - Keeping eye on some Security issues ( will be patched when patched new version of those packages is available): 
-  - **<span style="color:red;">Prototype Pollution in lodash **Critical** : Will not fix because lodash team are stuborn and insist that [npm audit is broken](https://github.com/gulpjs/gulp/issues/2201#issuecomment-401614368)</span>**
+  - ~~**<span style="color:red;">Prototype Pollution in lodash **Critical** : Will not fix because lodash team are stuborn and insist that [npm audit is broken](https://github.com/gulpjs/gulp/issues/2201#issuecomment-401614368)</span>**~~
+  - Prototype Pollution in lodash **Critical** : workaround forced upgrade `"lodash.template": "^4.5.0"`
   - glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex High (Fixed)
   - yargs-parser Vulnerable to Prototype Pollution Moderate (Fixed)
   - Memory Exposure in concat-stream Moderate (Fixed)
