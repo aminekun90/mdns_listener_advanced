@@ -36,11 +36,11 @@ export class Core {
     private myEvent = new EventEmitter(),
     private publisher = bonjour(),
   ) {
-    this.hostnames = hostsList || [];
+    this.hostnames = hostsList ?? [];
     this.mdnsHostsFile = mdnsHostsPath;
     this.logger.state.isEnabled = true;
     this.debugEnabled = !!options?.debug;
-    this.__initialize();
+    this.__init();
   }
 
   /**
@@ -65,7 +65,7 @@ export class Core {
    * Initialize mdns
    * @private
    */
-  private __initialize() {
+  private __init() {
     try {
       this.hostnames = this.__getHosts()
         .split('\n')
@@ -235,5 +235,3 @@ export class Core {
     }
   }
 }
-
-

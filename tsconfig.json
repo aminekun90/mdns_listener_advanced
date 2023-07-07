@@ -5,15 +5,15 @@
     "lib": ["es2022"],
     "baseUrl": ".",
     "paths": {
-      "@mdns-listener/*": ["./src/*"],
-      "*": ["./node_modules/*"]
+      "*": ["./node_modules/*"],
+      "@mdns-listener/*": ["./src/*"]
     },
-    "allowSyntheticDefaultImports": true, 
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "moduleResolution": "node",
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "ts-node": {
     "require": ["tsconfig-paths/register"]
