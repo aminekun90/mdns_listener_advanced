@@ -49,7 +49,7 @@ export class Core {
    */
   debug(...args: any[]) {
     if (this.debugEnabled) {
-      this.logger.debug.apply(this.logger, args);
+      this.logger.debug(...args);
     }
   }
 
@@ -58,7 +58,7 @@ export class Core {
    * @param  {...any} args
    */
   info(...args: any[]) {
-    this.logger.info.apply(this.logger, args);
+    this.logger.info(...args);
   }
 
   /**
