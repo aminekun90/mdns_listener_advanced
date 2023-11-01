@@ -13,7 +13,12 @@ I recommand using this python publisher https://github.com/aminekun90/python_zer
 
 - **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
 
-Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code might still exist.
+## Requirements
+- Node 18 or later (we recommend using NVM) this package is using Node v20
+- To use nvm
+```bash
+$ nvm use
+```
 
 ## Installation
 `npm install mdns-listener-advanced`
@@ -145,3 +150,6 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 #### Want to contribute or have any suggestions or questions?
 
 Contact me on Linkedin [Here](https://www.linkedin.com/in/amine-bouzahar/).
+
+##### Other notes
+Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code might still exist.
