@@ -13,6 +13,7 @@
     "@types/multicast-dns": "^7.2.1",
     "@types/uuid": "^9.0.1",
     "bonjour": "^3.5.0",
+    "commitlint": "^18.2.0",
     "logdown": "^3.3.1",
     "multicast-dns": "^7.2.5",
     "rimraf": "^5.0.0",
