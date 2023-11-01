@@ -2,9 +2,10 @@
  
 [![npm package](https://img.shields.io/badge/npm%20i-mdns--listener--advanced-brightgreen)](https://www.npmjs.com/package/mdns-listener-advanced) 
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/aminekun90/mdns_listener_advanced/graphs/commit-activity) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases) [![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions) [![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE)
+![node-current](https://img.shields.io/node/v/mdns-listener-advanced)
 
 
-**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 13.3.1(a) and windows 11 and ubuntu 18
+**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 14.1 and windows 11 and ubuntu 18
 If you have any issue feel free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues) 
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
@@ -13,7 +14,12 @@ I recommand using this python publisher https://github.com/aminekun90/python_zer
 
 - **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
 
-Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code might still exist.
+## Requirements
+- Node 18 or later (we recommend using NVM) this package is using Node v20
+- To use nvm
+```bash
+$ nvm use
+```
 
 ## Installation
 `npm install mdns-listener-advanced`
@@ -145,3 +151,6 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 #### Want to contribute or have any suggestions or questions?
 
 Contact me on Linkedin [Here](https://www.linkedin.com/in/amine-bouzahar/).
+
+##### Other notes
+Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code might still exist.
