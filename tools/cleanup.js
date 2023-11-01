@@ -3,19 +3,28 @@ const fs = require('fs')
 const Path = require('path')
 /* eslint-enable */
 
-const deleteFolderRecursive = (path) => {
-  if (fs.existsSync(path)) {
-    fs.readdirSync(path).forEach((file) => {
-      const curPath = Path.join(path, file)
-      if (fs.lstatSync(curPath).isDirectory()) {
-        deleteFolderRecursive(curPath)
-      } else {
-        fs.unlinkSync(curPath)
-      }
-    })
-    fs.rmdirSync(path)
+const allowedDirectories = [Path.join(__dirname, '../dist')]; // Define allowed directories
+
+const deleteFolderRecursive = (dirPath) => {
+  const sanitizedPath = Path.resolve(dirPath);
+
+  if (!allowedDirectories.some(directory => sanitizedPath.includes(directory))) {
+    console.error('Invalid path.'); // Input path is not in the allowed directories
+    return;
   }
-}
+
+  if (fs.existsSync(sanitizedPath)) {
+    fs.readdirSync(sanitizedPath).forEach((file) => {
+      const curPath = Path.join(sanitizedPath, file);
+      if (fs.lstatSync(curPath).isDirectory()) {
+        deleteFolderRecursive(curPath);
+      } else {
+        fs.unlinkSync(curPath);
+      }
+    });
+    fs.rmdirSync(sanitizedPath);
+  }
+};
 
 const folder = process.argv.slice(2)[0]
 
