@@ -94,9 +94,6 @@
   "moduleDirectories": [
     "src"
   ],
-  "peerDependencies": {
-    "module": "*"
-  },
   "overrides": {
     "glob-parent": "^6.0.2",
     "yargs-parser": "^21.1.1",
