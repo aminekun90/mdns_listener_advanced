@@ -15,11 +15,9 @@ I recommand using this python publisher https://github.com/aminekun90/python_zer
 - **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
 
 ## Requirements
-- Node 18 or later (we recommend using NVM) this package is using Node v20
-- To use nvm
-```bash
-$ nvm use
-```
+- Node 18 or later (we recommend using [NVM](https://github.com/nvm-sh/nvm)) this package is using Node v20
+
+
 
 ## Installation
 `npm install mdns-listener-advanced`
@@ -135,9 +133,16 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 | `.publish(hostname)`                           | hostname        | `string`           | to publish an mdns host protocol                   |
 | `.unpublishAll()`                              |                 |                    | to unpublish all mdns host protocol                |
 ## Known / Reported issues :
-- TBD
+- investigating an issue with Bin script confusion not affecting the npm package, only quality 
 ## Fixed major security issues :
+- Lot of security issues fixed since and deprecated packages replaced or removed 3.1.9
+  - CVE-2020-28469
 
+  - SemVer anomaly
+  - resolve-url (deprecated)
+  - source-map-resolve (deprecated)
+  - source-map-url (deprecated)
+  - urix (deprecated)
 - Issue on version 3.0.9 module not found (Fixed since 3.0.11)
 - Keeping eye on some Security issues ( will be patched when patched new version of those packages is available): 
   - ~~**<span style="color:red;">Prototype Pollution in lodash **Critical** : Will not fix because lodash team are stuborn and insist that [npm audit is broken](https://github.com/gulpjs/gulp/issues/2201#issuecomment-401614368)</span>**~~
