@@ -1,4 +1,19 @@
 export interface Options {
-  debug?: boolean|null;
+  debug?: boolean | null;
 }
-export const NPM_URL= 'https://www.npmjs.com/package/mdns-listener-advanced';
+export const NPM_URL = 'https://www.npmjs.com/package/mdns-listener-advanced';
+
+export type Device = {
+  name: string;
+  type: string;
+  data: DeviceData;
+};
+export type DeviceBuffer = {
+  name: string;
+  type: string;
+  data: Buffer;
+};
+export type DeviceData = {
+  uuid: string;
+  ipv4: string;
+};

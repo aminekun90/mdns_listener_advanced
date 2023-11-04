@@ -1,13 +1,12 @@
 import { platform, networkInterfaces } from 'os';
 import { existsSync, readFileSync } from 'fs';
 import { EventEmitter } from 'events';
-import { NPM_URL, Options } from './types';
+import { Device, DeviceBuffer, DeviceData, NPM_URL, Options } from './types';
 import mDNS from 'multicast-dns';
 import bonjour from 'bonjour';
 import logdown from 'logdown';
 
 import { v4 as uuidv4 } from 'uuid';
-
 
 /**
  * MDNS Advanced Core Class
@@ -17,21 +16,21 @@ export class Core {
   private mdnsHostsFile: string | null | undefined;
   private debugEnabled: boolean = false;
   private error: boolean = false;
+
   /**
    * Constructor
-   * 
-   * @param hostsList 
-   * @param mdnsHostsPath 
-   * @param options 
-   * @param logger 
-   * @param mdns 
-   * @param myEvent 
+   * @param hostsList
+   * @param mdnsHostsPath
+   * @param options
+   * @param logger
+   * @param mdns
+   * @param myEvent
    */
   constructor(
     hostsList?: string[],
     mdnsHostsPath?: string | null,
     options?: Options,
-    private logger: logdown.Logger = logdown("MDNS ADVANCED"),
+    private logger: logdown.Logger = logdown('MDNS ADVANCED'),
     private mdns = mDNS(),
     private myEvent = new EventEmitter(),
     private publisher = bonjour(),
@@ -47,7 +46,7 @@ export class Core {
    * Console debugging function
    * @param  {...any} args
    */
-  debug(...args: any[]) {
+  debug(...args: unknown[]) {
     if (this.debugEnabled) {
       this.logger.debug(...args);
     }
@@ -57,7 +56,7 @@ export class Core {
    * Console info function
    * @param  {...any} args
    */
-  info(...args: any[]) {
+  info(...args: unknown[]) {
     this.logger.info(...args);
   }
 
@@ -73,10 +72,10 @@ export class Core {
         .map((name) => name.trim()) // Trim lines
         .filter((name) => name.length > 0); // Remove empty lines
       if (!this.hostnames.length) {
-        this.logger.warn("Hosts are empty");
+        this.logger.warn('Hosts are empty');
       }
     } catch (error) {
-      this.debug(error);
+      this.debug(error as Error);
       this.error = true;
     }
   }
@@ -100,7 +99,7 @@ export class Core {
       if (existsSync(this.mdnsHostsFile)) {
         return this.__getHosts();
       }
-      this.logger.warn("Hostnames or path to hostnames is not provided, listening to a host is compromised!");
+      this.logger.warn('Hostnames or path to hostnames is not provided, listening to a host is compromised!');
       throw new Error(`Provide hostnames or path to hostnames ! Report this error ${NPM_URL}`);
     }
   }
@@ -126,21 +125,21 @@ export class Core {
   }
 
   /**
-    * Publish a host using bonjour protocol
-    * @param name
-    */
+   * Publish a host using bonjour protocol
+   * @param name
+   */
   public publish(name: string) {
     const options = {
       port: 3000,
       name: name,
-      type: "TXT",
+      type: 'TXT',
       txt: {
-        "uuid": `"${uuidv4()}"`,
-        "ipv4": JSON.stringify(this.getLocalIpAddress())
+        uuid: `"${uuidv4()}"`,
+        ipv4: JSON.stringify(this.getLocalIpAddress()),
       },
     } as bonjour.ServiceOptions;
     const bonjourService = this.publisher.publish(options);
-    this.info("A hostname have been published with options", options);
+    this.info('A hostname have been published with options', options);
     this.debug(bonjourService);
     return bonjourService;
   }
@@ -150,7 +149,7 @@ export class Core {
    */
   public unpublishAll() {
     this.publisher.unpublishAll();
-    this.info("All hostnames have been unpublished");
+    this.info('All hostnames have been unpublished');
   }
 
   /**
@@ -175,13 +174,13 @@ export class Core {
 
   /**
    * Handle buffer data and transform them to a json object
-   * @param dataBuffer 
-   * @returns 
+   * @param dataBuffer
+   * @returns
    */
   private handleBufferData(dataBuffer: Buffer) {
-    let str = dataBuffer.toString('utf8');
+    const str = dataBuffer.toString('utf8');
     const propertiesMatch = str.match(/(\w+)=("[^"]*"|\S+)/g);
-    const properties: any = {};
+    const properties: { [key: string]: string } = {};
     if (propertiesMatch) {
       propertiesMatch.forEach((prop) => {
         const [key, value] = prop.split('=');
@@ -192,26 +191,22 @@ export class Core {
   }
 
   /**
-   * Handle mdns response 
-   * 
-   * @param response 
+   * Handle mdns response
+   *
+   * @param response
    */
-  private handleResponse(response: any) {
-    const findHosts: Array<any> = [];
+  private handleResponse(response: { answers: Array<DeviceBuffer> }) {
+    const findHosts: Array<Device> = [];
     this.hostnames.forEach((hostname) => {
-      response.answers.filter(
-        (a: any) => (
-          a.data
-          && Array.isArray(a.data)
-          && a.name.includes(hostname)
-        )).forEach((a: any) => {
+      response.answers
+        .filter((a) => a.data && Array.isArray(a.data) && a.name.includes(hostname))
+        .forEach((a) => {
           findHosts.push({
             name: a.name,
             type: a.type,
-            data: this.handleBufferData(a.data)
-          })
+            data: this.handleBufferData(a.data) as DeviceData,
+          });
         });
-
 
       if (findHosts.length) {
         this.myEvent.emit('response', findHosts);
