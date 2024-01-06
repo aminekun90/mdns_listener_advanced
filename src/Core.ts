@@ -15,6 +15,7 @@ export class Core {
   private hostnames: Array<string>;
   private mdnsHostsFile: string | null | undefined;
   private debugEnabled: boolean = false;
+  private disableListener: boolean = false;
   private error: boolean = false;
 
   /**
@@ -27,7 +28,7 @@ export class Core {
    * @param myEvent
    */
   constructor(
-    hostsList?: string[],
+    hostsList?: string[] | null,
     mdnsHostsPath?: string | null,
     options?: Options,
     private logger: logdown.Logger = logdown('MDNS ADVANCED'),
@@ -39,7 +40,7 @@ export class Core {
     this.mdnsHostsFile = mdnsHostsPath;
     this.logger.state.isEnabled = true;
     this.debugEnabled = !!options?.debug;
-    this.__init();
+    this.disableListener = !!options?.disableListener;
   }
 
   /**
@@ -64,7 +65,7 @@ export class Core {
    * Initialize mdns
    * @private
    */
-  private __init() {
+  private __initListener() {
     try {
       this.hostnames = this.__getHosts()
         .split('\n')
@@ -158,6 +159,12 @@ export class Core {
    * @public
    */
   public listen(): EventEmitter {
+    if (this.disableListener) {
+      this.info('Listener is disabled');
+      return this.myEvent;
+    }
+
+    this.__initListener();
     if (this.error) {
       this.myEvent.on('error', (e) => {
         this.info(e.message);

@@ -1,8 +1,9 @@
 import { Core } from './Core';
 import { Device } from './types';
 const ref = 'MyDevice2';
-const mdns = new Core([ref], null, {
+const mdns = new Core(null, null, {
   debug: false,
+  disableListener: false,
 });
 
 const event = mdns.listen();

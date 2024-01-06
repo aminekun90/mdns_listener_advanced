@@ -121,17 +121,18 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 - At the moment you cannot unpublish services undividually or by hostname and there might be a way using the included bonjour library.
 ### Details :
 
-| Functions                                      | Params          | Type               | Description                                        |
-|------------------------------------------------|-----------------|--------------------|----------------------------------------------------|
-| `new mdnsListenerAdvanced.Core(['MyDevice2']);`| hostsList       | `Array<string>`    | List of hostnames                                  |
-| `new advanced_mdns(..,mdnsHostsPath)`          | mdnsHostsPath   | `string`           | Full path of your .mdns-hosts  (not available)     |
-| `new advanced_mdns(..,..,options)`             | options         | `{debug:boolean}`  | Enable debug                                       |
-| `.listen().on(event,callback(object))`         | event           | `string`           | To catch a response event when set to `"response"` |
-|                                                | callback        | `function(object)` | callback to do custome code                        |
-|                                                | object          | `object`           | a received object i.e `{MyDevice1:{...}}`          |
-| `.stop()`                                      |                 |                    | to stop the event listener                         |
-| `.publish(hostname)`                           | hostname        | `string`           | to publish an mdns host protocol                   |
-| `.unpublishAll()`                              |                 |                    | to unpublish all mdns host protocol                |
+| Functions                                      | Params        | Type                         | Description                                        |
+|------------------------------------------------|---------------|------------------------------|----------------------------------------------------|
+| `new mdnsListenerAdvanced.Core(['MyDevice2']);`| hostsList     | `Array<string>`              | List of hostnames                                  |
+| `new advanced_mdns(..,mdnsHostsPath)`          | mdnsHostsPath | `string`                     | Full path of your .mdns-hosts  (not available)     |
+| `new advanced_mdns(..,..,options)`             | options       | `{debug:boolean}`            | Enable debug default value is `false`              |
+| `new advanced_mdns(..,..,options)`             | options       | `{disableListener:boolean}`  | Disable listener the default value is `false` set it to `true` to use only publish mode     |
+| `.listen().on(event,callback(object))`         | event         | `string`                     | To catch a response event when set to `"response"` |
+|                                                | callback      | `function(object)`           | callback to do custome code                        |
+|                                                | object        | `object`                     | a received object i.e `{MyDevice1:{...}}`          |
+| `.stop()`                                      |               |                              | to stop the event listener                         |
+| `.publish(hostname)`                           | hostname      | `string`                     | to publish an mdns host protocol                   |
+| `.unpublishAll()`                              |               |                              | to unpublish all mdns host protocol                |
 ## Known / Reported issues :
 - investigating an issue with Bin script confusion not affecting the npm package, only quality 
 ## Fixed major security issues :

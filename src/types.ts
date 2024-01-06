@@ -1,5 +1,6 @@
 export interface Options {
   debug?: boolean | null;
+  disableListener?: boolean;
 }
 export const NPM_URL = 'https://www.npmjs.com/package/mdns-listener-advanced';
 
