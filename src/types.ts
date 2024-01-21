@@ -18,3 +18,12 @@ export type DeviceData = {
   uuid: string;
   ipv4: string;
 };
+
+/**
+ * Emitted event const
+ */
+export const emittedEvent = {
+  RESPONSE: 'response',
+  RAW_RESPONSE: 'rawResponse',
+  ERROR: 'error',
+};
