@@ -56,13 +56,16 @@ const mdns = new Core([ref], null, {
 
 const event = mdns.listen();
 mdns.publish(ref);
+// Basic response of 'MyDevice2'
 event.on(emittedEvent.RESPONSE, (found_hostnames: Array<Device>) => {
   mdns.info('found hostnames', found_hostnames);
   // mdns.stop();// To stop the listener
 });
-event.on(emittedEvent.RAW_RESPONSE, (hosts: object) => {
+// Array of objects of different types
+event.on(emittedEvent.RAW_RESPONSE, (hosts: Array<object>) => {
   mdns.info('raw response', hosts);
 });
+//Error occured
 event.on(emittedEvent.ERROR, (error: Error) => {
   mdns.info('error', error);
   // mdns.stop();// To stop the listener
@@ -76,11 +79,11 @@ event.on(emittedEvent.ERROR, (error: Error) => {
 mdns.stop();
 ```
 #### emittedEvent Const since v3.2.0:
-| Name                 | Description                                     |
-| -------------------- | ----------------------------------------------- |
-| `emittedEvent.RESPONSE`           | Emits when a device is discovered  |
-| `emittedEvent.RAW_RESPONSE`       | Emits raw data of of the response  |
-| `emittedEvent.ERROR`              | Emits on any errors                |
+| Name                              | Descripti                                |
+| --------------------------------- | ---------------------------------------- |
+| `emittedEvent.RESPONSE`           | Emits when an mdns device is discovered  |
+| `emittedEvent.RAW_RESPONSE`       | Emits raw data of the mdns response   |
+| `emittedEvent.ERROR`              | Emits on any errors                      |
 
 ## Configuration
 
