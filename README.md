@@ -25,7 +25,7 @@ I recommand using this python publisher https://github.com/aminekun90/python_zer
 
 ![JS](https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E)
 
-Fully tested on windows 11, ubuntu 18 and Mac OS 13.
+Fully tested on windows 11, ubuntu 18 and Mac OS 14.
 
 ```javascript
 var mdnsListenerAdvanced = require("mdns-listener-advanced");
