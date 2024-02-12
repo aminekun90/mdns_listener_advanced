@@ -1,6 +1,6 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "license": "MIT",
@@ -12,7 +12,7 @@
     "@types/bonjour": "^3.5.10",
     "@types/multicast-dns": "^7.2.1",
     "@types/uuid": "^9.0.1",
-    "bonjour": "^3.5.0",
+    "bonjour": "^3.3.0",
     "logdown": "^3.3.1",
     "multicast-dns": "^7.2.5",
     "uuid": "^9.0.0"
@@ -62,7 +62,8 @@
     "DNS",
     "Listener",
     "Multicase DNS",
-    "zeroconf"
+    "zeroconf",
+    "multicast-dns"
   ],
   "bugs": {
     "url": "https://github.com/aminekun90/mdns_listener_advanced/issues"
@@ -100,6 +101,7 @@
     "yargs-parser": "^21.1.1",
     "concat-stream": "^2.0.0",
     "micromatch": "^4.0.5",
-    "ansi-regex": "^3.0.1"
+    "ansi-regex": "^3.0.1",
+    "ip": "1.1.8"
   }
 }
