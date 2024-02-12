@@ -63,7 +63,7 @@ describe("Core", () => {
         beforeEach(() => {
             myEvent = new EventEmitter();
             mdns = mdnsMock();
-            bonjour = bonjourMock.Bonjour(); // Instantiate Bonjour from the mock
+            bonjour = new Bonjour(); // Instantiate Bonjour from the mock
             logger = {
                 state: {
                     isEnabled: false,
