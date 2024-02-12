@@ -230,11 +230,11 @@ export class Core {
   public stop() {
     this.info('Stopping mdns listener...');
     // fix mdns undefined sometimes
-    if (this.mdns && this.mdns.removeAllListeners instanceof Function) {
+    if (this.mdns?.removeAllListeners) {
       this.mdns.removeAllListeners();
     }
     // fix myEvent undefined
-    if (this.myEvent && this.myEvent.removeAllListeners instanceof Function) {
+    if (this.myEvent?.removeAllListeners) {
       this.myEvent.removeAllListeners();
     }
   }
