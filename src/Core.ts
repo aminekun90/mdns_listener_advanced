@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'fs';
 import { EventEmitter } from 'events';
 import { Device, DeviceBuffer, DeviceData, NPM_URL, Options, emittedEvent } from './types';
 import mDNS from 'multicast-dns';
-import bonjour from 'bonjour';
+import { Bonjour, ServiceConfig } from 'bonjour-service';
 import logdown from 'logdown';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -34,7 +34,7 @@ export class Core {
     private logger: logdown.Logger = logdown('MDNS ADVANCED'),
     private mdns = mDNS(),
     private myEvent = new EventEmitter(),
-    private publisher = bonjour(),
+    private publisher = new Bonjour(),
   ) {
     this.hostnames = hostsList ?? [];
     this.mdnsHostsFile = mdnsHostsPath;
@@ -101,7 +101,7 @@ export class Core {
         return this.__getHosts();
       }
       this.logger.warn('Hostnames or path to hostnames is not provided, listening to a host is compromised!');
-      throw new Error(`Provide hostnames or path to hostnames ! Report this error ${NPM_URL}`);
+      throw new Error(`Provide hostnames or path to hostnames! Report this error ${NPM_URL}`);
     }
   }
 
@@ -138,7 +138,7 @@ export class Core {
         uuid: `"${uuidv4()}"`,
         ipv4: JSON.stringify(this.getLocalIpAddress()),
       },
-    } as bonjour.ServiceOptions;
+    } as ServiceConfig;
     const bonjourService = this.publisher.publish(options);
     this.info('A hostname have been published with options', options);
     this.debug(bonjourService);
