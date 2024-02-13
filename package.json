@@ -1,6 +1,6 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "license": "MIT",
@@ -9,10 +9,9 @@
   "umd:main": "dist/umd/index.js",
   "types": "dist/types/index.d.js",
   "dependencies": {
-    "@types/bonjour": "^3.5.10",
     "@types/multicast-dns": "^7.2.1",
     "@types/uuid": "^9.0.1",
-    "bonjour": "^3.3.0",
+    "bonjour-service": "^1.2.1",
     "logdown": "^3.3.1",
     "multicast-dns": "^7.2.5",
     "uuid": "^9.0.0"
@@ -71,8 +70,8 @@
   "homepage": "https://github.com/aminekun90/mdns_listener_advanced#readme",
   "devDependencies": {
     "@types/node": "^20.8.10",
-    "@typescript-eslint/eslint-plugin": "^6.9.1",
-    "@typescript-eslint/parser": "^6.9.1",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "commitlint": "^18.2.0",
     "eslint": "^8.52.0",
     "eslint-config-prettier": "^9.0.0",
@@ -96,12 +95,5 @@
   "moduleDirectories": [
     "src"
   ],
-  "overrides": {
-    "glob-parent": "^6.0.2",
-    "yargs-parser": "^21.1.1",
-    "concat-stream": "^2.0.0",
-    "micromatch": "^4.0.5",
-    "ansi-regex": "^3.0.1",
-    "multicast-dns": "^7.2.5"
-  }
+  "overrides": {}
 }
