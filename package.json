@@ -73,7 +73,7 @@
     "@types/node": "^20.8.10",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
-    "commitlint": "^18.2.0",
+    "commitlint": "^19.0.3",
     "eslint": "^8.52.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
