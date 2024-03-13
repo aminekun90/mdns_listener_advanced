@@ -1,7 +1,7 @@
 import { platform, networkInterfaces } from 'os';
 import { existsSync, readFileSync } from 'fs';
 import { EventEmitter } from 'events';
-import { Device, DeviceBuffer, DeviceData, NPM_URL, Options, emittedEvent } from './types';
+import { Device, DeviceBuffer, DeviceData, NPM_URL, Options, EmittedEvent } from './types';
 import mDNS from 'multicast-dns';
 import { Bonjour, ServiceConfig } from 'bonjour-service';
 import logdown from 'logdown';
@@ -166,16 +166,16 @@ export class Core {
 
     this.__initListener();
     if (this.error) {
-      this.myEvent.on(emittedEvent.ERROR, (e) => {
+      this.myEvent.on(EmittedEvent.ERROR, (e) => {
         this.info(e.message);
       });
       const errorMessage = `An error occurred while trying to listen to mdns ! Report this error ${NPM_URL}`;
-      this.myEvent.emit(emittedEvent.ERROR, new Error(errorMessage));
+      this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage));
       return this.myEvent;
     }
     this.info('Looking for hostnames...', this.hostnames);
 
-    this.mdns.on(emittedEvent.RESPONSE, this.handleResponse.bind(this));
+    this.mdns.on(EmittedEvent.RESPONSE, this.handleResponse.bind(this));
     return this.myEvent;
   }
 
@@ -205,7 +205,7 @@ export class Core {
   private handleResponse(response: { answers: Array<DeviceBuffer> }) {
     const findHosts: Array<Device> = [];
     this.debug('RESPONSE:', response);
-    this.myEvent.emit(emittedEvent.RAW_RESPONSE, response);
+    this.myEvent.emit(EmittedEvent.RAW_RESPONSE, response);
     this.hostnames.forEach((hostname) => {
       response.answers
         .filter((a) => a.data && Array.isArray(a.data) && a.name.includes(hostname))
@@ -218,7 +218,7 @@ export class Core {
         });
 
       if (findHosts.length) {
-        this.myEvent.emit(emittedEvent.RESPONSE, findHosts);
+        this.myEvent.emit(EmittedEvent.RESPONSE, findHosts);
       }
     });
   }

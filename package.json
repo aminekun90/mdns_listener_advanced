@@ -1,6 +1,6 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "3.2.5",
+  "version": "3.2.6",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "funding": [
@@ -70,9 +70,7 @@
   },
   "homepage": "https://github.com/aminekun90/mdns_listener_advanced#readme",
   "devDependencies": {
-    "@types/node": "^20.8.10",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
+    "@types/node": "^20.11.27",
     "commitlint": "^19.0.3",
     "eslint": "^8.52.0",
     "eslint-config-prettier": "^9.0.0",

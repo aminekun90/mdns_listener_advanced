@@ -22,8 +22,8 @@ export type DeviceData = {
 /**
  * Emitted event const
  */
-export const emittedEvent = {
-  RESPONSE: 'response',
-  RAW_RESPONSE: 'rawResponse',
-  ERROR: 'error',
-};
+export enum EmittedEvent {
+  RESPONSE = 'response',
+  RAW_RESPONSE = 'rawResponse',
+  ERROR = 'error',
+}
