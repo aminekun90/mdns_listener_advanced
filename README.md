@@ -46,7 +46,7 @@ event.on('error', (error) => {
 ![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) 
 
 ```typescript
-import { Core, Device, emittedEvent  } from 'mdns-listener-advanced';
+import { Core, Device, EmittedEvent  } from 'mdns-listener-advanced';
 
 const ref = 'MyDevice2';
 const mdns = new Core([ref], null, {
@@ -57,16 +57,16 @@ const mdns = new Core([ref], null, {
 const event = mdns.listen();
 mdns.publish(ref);
 // Basic response of 'MyDevice2'
-event.on(emittedEvent.RESPONSE, (found_hostnames: Array<Device>) => {
+event.on(EmittedEvent.RESPONSE, (found_hostnames: Array<Device>) => {
   mdns.info('found hostnames', found_hostnames);
   // mdns.stop();// To stop the listener
 });
 // Array of objects of different types
-event.on(emittedEvent.RAW_RESPONSE, (hosts: Array<object>) => {
+event.on(EmittedEvent.RAW_RESPONSE, (hosts: Array<object>) => {
   mdns.info('raw response', hosts);
 });
 //Error occured
-event.on(emittedEvent.ERROR, (error: Error) => {
+event.on(EmittedEvent.ERROR, (error: Error) => {
   mdns.info('error', error);
   // mdns.stop();// To stop the listener
 });
@@ -75,15 +75,19 @@ event.on(emittedEvent.ERROR, (error: Error) => {
 
 - To Stop listening to the event use :
 
-```javascript
+```typescript
 mdns.stop();
 ```
-#### emittedEvent Const since v3.2.0:
+#### EmittedEvent Enum since v3.2.6 :
+
+```typescript
+import { EmittedEvent } from 'mdns-listener-advanced';
+```
 | Name                              | Descripti                                |
 | --------------------------------- | ---------------------------------------- |
-| `emittedEvent.RESPONSE`           | Emits when an mdns device is discovered  |
-| `emittedEvent.RAW_RESPONSE`       | Emits raw data of the mdns response   |
-| `emittedEvent.ERROR`              | Emits on any errors                      |
+| `EmittedEvent.RESPONSE`           | Emits when an mdns device is discovered  |
+| `EmittedEvent.RAW_RESPONSE`       | Emits raw data of the mdns response   |
+| `EmittedEvent.ERROR`              | Emits on any errors                      |
 
 ## Configuration
 
@@ -152,8 +156,7 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 | `.stop()`                                      |               |                              | to stop the event listener                         |
 | `.publish(hostname)`                           | hostname      | `string`                     | to publish an mdns host protocol                   |
 | `.unpublishAll()`                              |               |                              | to unpublish all mdns host protocol                |
-## Known / Reported issues :
-- TBD
+
 ## Buy me a coffee
 [![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/aminebouzahar)
 #### Want to contribute or have any suggestions or questions?
