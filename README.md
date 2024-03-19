@@ -3,9 +3,9 @@
 [![npm package](https://img.shields.io/badge/npm%20i-mdns--listener--advanced-brightgreen)](https://www.npmjs.com/package/mdns-listener-advanced) 
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/aminekun90/mdns_listener_advanced/graphs/commit-activity) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases) [![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions) [![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE)
 ![node-current](https://img.shields.io/node/v/mdns-listener-advanced)
+[![Socket Badge](https://socket.dev/api/badge/npm/package/mdns-listener-advanced)](https://socket.dev/npm/package/mdns-listener-advanced)
 
-
-**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 14.1 and windows 11 and ubuntu 18
+**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 14.4 and windows 11 and ubuntu 20.04
 If you have any issue feel free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues) 
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
@@ -46,8 +46,8 @@ event.on('error', (error) => {
 ![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) 
 
 ```typescript
-import { Core } from './Core';
-import { Device, emittedEvent } from './types';
+import { Core, Device, EmittedEvent  } from 'mdns-listener-advanced';
+
 const ref = 'MyDevice2';
 const mdns = new Core([ref], null, {
   debug: false,
@@ -57,16 +57,16 @@ const mdns = new Core([ref], null, {
 const event = mdns.listen();
 mdns.publish(ref);
 // Basic response of 'MyDevice2'
-event.on(emittedEvent.RESPONSE, (found_hostnames: Array<Device>) => {
+event.on(EmittedEvent.RESPONSE, (found_hostnames: Array<Device>) => {
   mdns.info('found hostnames', found_hostnames);
   // mdns.stop();// To stop the listener
 });
 // Array of objects of different types
-event.on(emittedEvent.RAW_RESPONSE, (hosts: Array<object>) => {
+event.on(EmittedEvent.RAW_RESPONSE, (hosts: Array<object>) => {
   mdns.info('raw response', hosts);
 });
 //Error occured
-event.on(emittedEvent.ERROR, (error: Error) => {
+event.on(EmittedEvent.ERROR, (error: Error) => {
   mdns.info('error', error);
   // mdns.stop();// To stop the listener
 });
@@ -75,15 +75,19 @@ event.on(emittedEvent.ERROR, (error: Error) => {
 
 - To Stop listening to the event use :
 
-```javascript
+```typescript
 mdns.stop();
 ```
-#### emittedEvent Const since v3.2.0:
+#### EmittedEvent Enum since v3.2.6 :
+
+```typescript
+import { EmittedEvent } from 'mdns-listener-advanced';
+```
 | Name                              | Descripti                                |
 | --------------------------------- | ---------------------------------------- |
-| `emittedEvent.RESPONSE`           | Emits when an mdns device is discovered  |
-| `emittedEvent.RAW_RESPONSE`       | Emits raw data of the mdns response   |
-| `emittedEvent.ERROR`              | Emits on any errors                      |
+| `EmittedEvent.RESPONSE`           | Emits when an mdns device is discovered  |
+| `EmittedEvent.RAW_RESPONSE`       | Emits raw data of the mdns response   |
+| `EmittedEvent.ERROR`              | Emits on any errors                      |
 
 ## Configuration
 
@@ -152,27 +156,9 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 | `.stop()`                                      |               |                              | to stop the event listener                         |
 | `.publish(hostname)`                           | hostname      | `string`                     | to publish an mdns host protocol                   |
 | `.unpublishAll()`                              |               |                              | to unpublish all mdns host protocol                |
-## Known / Reported issues :
-- investigating an issue with Bin script confusion not affecting the npm package, only quality 
-## Fixed major security issues :
-- Lot of security issues fixed since and deprecated packages replaced or removed 3.1.9
-  - CVE-2020-28469
 
-  - SemVer anomaly
-  - resolve-url (deprecated)
-  - source-map-resolve (deprecated)
-  - source-map-url (deprecated)
-  - urix (deprecated)
-- Issue on version 3.0.9 module not found (Fixed since 3.0.11)
-- Keeping eye on some Security issues ( will be patched when patched new version of those packages is available): 
-  - ~~**<span style="color:red;">Prototype Pollution in lodash **Critical** : Will not fix because lodash team are stuborn and insist that [npm audit is broken](https://github.com/gulpjs/gulp/issues/2201#issuecomment-401614368)</span>**~~
-  - Prototype Pollution in lodash **Critical** : workaround forced upgrade `"lodash.template": "^4.5.0"`
-  - glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex High (Fixed)
-  - yargs-parser Vulnerable to Prototype Pollution Moderate (Fixed)
-  - Memory Exposure in concat-stream Moderate (Fixed)
-  - Regular Expression Denial of Service (ReDoS) in braces Low (Fixed)
-  - Regular Expression Denial of Service in braces Low (Fixed)
-
+## Buy me a coffee
+[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/aminebouzahar)
 #### Want to contribute or have any suggestions or questions?
 
 Contact me on Linkedin [Here](https://www.linkedin.com/in/amine-bouzahar/).
