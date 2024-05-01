@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import { Device, DeviceBuffer, DeviceData, NPM_URL, Options, EmittedEvent } from './types';
 import mDNS from 'multicast-dns';
 import { Bonjour, ServiceConfig } from 'bonjour-service';
-import logdown from 'logdown';
+import { Logger } from "tslog";
 
 import { v4 as uuidv4 } from 'uuid';
 
@@ -31,14 +31,13 @@ export class Core {
     hostsList?: string[] | null,
     mdnsHostsPath?: string | null,
     options?: Options,
-    private logger: logdown.Logger = logdown('MDNS ADVANCED'),
+    private logger:Logger<any> = new Logger({name:'MDNS ADVANCED'}),
     private mdns = mDNS(),
     private myEvent = new EventEmitter(),
     private publisher = new Bonjour(),
   ) {
     this.hostnames = hostsList ?? [];
     this.mdnsHostsFile = mdnsHostsPath;
-    this.logger.state.isEnabled = true;
     this.debugEnabled = !!options?.debug;
     this.disableListener = !!options?.disableListener;
   }
