@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
  * MDNS Advanced Core Class
  */
 export class Core {
-  private hostnames: Array<string>;
+  private hostnames: string[];
   private mdnsHostsFile: string | null | undefined;
   private debugEnabled: boolean = false;
   private disableListener: boolean = false;
