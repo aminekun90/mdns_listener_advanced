@@ -15,7 +15,7 @@ I recommand using this python publisher https://github.com/aminekun90/python_zer
 - **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
 
 ## Requirements
-- Node 18 or later (we recommend using [NVM](https://github.com/nvm-sh/nvm)) this package is using Node v20
+- Node 18 or later (we recommend using [NVM](https://github.com/nvm-sh/nvm)) this package is using Node v20.13.1 as of today
 
 
 
