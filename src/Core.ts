@@ -4,8 +4,7 @@ import { EventEmitter } from 'events';
 import { Device, DeviceBuffer, DeviceData, NPM_URL, Options, EmittedEvent } from './types';
 import mDNS from 'multicast-dns';
 import { Bonjour, ServiceConfig } from 'bonjour-service';
-import { Logger } from "tslog";
-
+import { Logger } from 'tslog';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -13,9 +12,9 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export class Core {
   private hostnames: string[];
-  private mdnsHostsFile: string | null | undefined;
-  private debugEnabled: boolean = false;
-  private disableListener: boolean = false;
+  private mdnsHostsFile?: string;
+  private debugEnabled: boolean;
+  private disableListener: boolean;
   private error: boolean = false;
 
   /**
@@ -31,13 +30,13 @@ export class Core {
     hostsList?: string[] | null,
     mdnsHostsPath?: string | null,
     options?: Options,
-    private logger:Logger<any> = new Logger({name:'MDNS ADVANCED'}),
+    private logger: Logger<any> = new Logger({ name: 'MDNS ADVANCED' }),
     private mdns = mDNS(),
     private myEvent = new EventEmitter(),
-    private publisher = new Bonjour(),
+    private publisher = new Bonjour()
   ) {
     this.hostnames = hostsList ?? [];
-    this.mdnsHostsFile = mdnsHostsPath;
+    this.mdnsHostsFile = mdnsHostsPath ?? undefined;
     this.debugEnabled = !!options?.debug;
     this.disableListener = !!options?.disableListener;
   }
@@ -46,7 +45,7 @@ export class Core {
    * Console debugging function
    * @param  {...any} args
    */
-  debug(...args: unknown[]) {
+  private debug(...args: unknown[]): void {
     if (this.debugEnabled) {
       this.logger.debug(...args);
     }
@@ -56,20 +55,19 @@ export class Core {
    * Console info function
    * @param  {...any} args
    */
-  info(...args: unknown[]) {
+  private info(...args: unknown[]): void {
     this.logger.info(...args);
   }
 
   /**
-   * Initialize mdns
+   * Initialize mdns listener
    * @private
    */
-  private __initListener() {
+  private __initListener(): void {
     try {
       this.hostnames = this.__getHosts()
         .split('\n')
-        .map((name) => name.replace(/#.*/, '')) // Remove comments
-        .map((name) => name.trim()) // Trim lines
+        .map((name) => name.replace(/#.*/, '').trim()) // Remove comments and trim lines
         .filter((name) => name.length > 0); // Remove empty lines
       if (!this.hostnames.length) {
         this.logger.warn('Hosts are empty');
@@ -87,15 +85,13 @@ export class Core {
    */
   private __getHosts(): string {
     if (this.mdnsHostsFile && existsSync(this.mdnsHostsFile)) {
-      return readFileSync(this.mdnsHostsFile, {
-        encoding: 'utf-8',
-      });
-    } else if (this.hostnames?.length) {
-      return this.hostnames?.join('\r\n');
+      return readFileSync(this.mdnsHostsFile, { encoding: 'utf-8' });
+    } else if (this.hostnames.length) {
+      return this.hostnames.join('\r\n');
     } else {
       this.mdnsHostsFile = platform().startsWith('win')
-        ? process.env.HOMEPATH + '\\' + '.mdns-hosts'
-        : process.env.HOME + '/' + '.mdns-hosts';
+        ? `${process.env.HOMEPATH}\\.mdns-hosts`
+        : `${process.env.HOME}/.mdns-hosts`;
       if (existsSync(this.mdnsHostsFile)) {
         return this.__getHosts();
       }
@@ -106,7 +102,7 @@ export class Core {
 
   /**
    * Get Current Device IP
-   * @return {Array<string>}
+   * @return {string | undefined}
    * @private
    */
   private getLocalIpAddress(): string | undefined {
@@ -129,7 +125,7 @@ export class Core {
    * @param name
    */
   public publish(name: string) {
-    const options = {
+    const options: ServiceConfig = {
       port: 3000,
       name: name,
       type: 'TXT',
@@ -137,17 +133,17 @@ export class Core {
         uuid: `"${uuidv4()}"`,
         ipv4: JSON.stringify(this.getLocalIpAddress()),
       },
-    } as ServiceConfig;
+    };
     const bonjourService = this.publisher.publish(options);
-    this.info('A hostname have been published with options', options);
+    this.info('A hostname has been published with options', options);
     this.debug(bonjourService);
     return bonjourService;
   }
 
   /**
-   * Unpublish the publisher
+   * Unpublish all hosts
    */
-  public unpublishAll() {
+  public unpublishAll(): void {
     this.publisher.unpublishAll();
     this.info('All hostnames have been unpublished');
   }
@@ -168,7 +164,7 @@ export class Core {
       this.myEvent.on(EmittedEvent.ERROR, (e) => {
         this.info(e.message);
       });
-      const errorMessage = `An error occurred while trying to listen to mdns ! Report this error ${NPM_URL}`;
+      const errorMessage = `An error occurred while trying to listen to mdns! Report this error ${NPM_URL}`;
       this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage));
       return this.myEvent;
     }
@@ -179,11 +175,11 @@ export class Core {
   }
 
   /**
-   * Handle buffer data and transform them to a json object
+   * Handle buffer data and transform them to a JSON object
    * @param dataBuffer
    * @returns
    */
-  private handleBufferData(dataBuffer: Buffer) {
+  private handleBufferData(dataBuffer: Buffer): { [key: string]: string } {
     const str = dataBuffer.toString('utf8');
     const propertiesMatch = str.match(/(\w+)=("[^"]*"|\S+)/g);
     const properties: { [key: string]: string } = {};
@@ -198,10 +194,9 @@ export class Core {
 
   /**
    * Handle mdns response
-   *
    * @param response
    */
-  private handleResponse(response: { answers: Array<DeviceBuffer> }) {
+  private handleResponse(response: { answers: Array<DeviceBuffer> }): void {
     const findHosts: Array<Device> = [];
     this.debug('RESPONSE:', response);
     this.myEvent.emit(EmittedEvent.RAW_RESPONSE, response);
@@ -223,16 +218,14 @@ export class Core {
   }
 
   /**
-   * Stop listening and kills the emmiter
+   * Stop listening and remove all listeners
    * @public
    */
-  public stop() {
+  public stop(): void {
     this.info('Stopping mdns listener...');
-    // fix mdns undefined sometimes
     if (this.mdns?.removeAllListeners) {
       this.mdns.removeAllListeners();
     }
-    // fix myEvent undefined
     if (this.myEvent?.removeAllListeners) {
       this.myEvent.removeAllListeners();
     }
