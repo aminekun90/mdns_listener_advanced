@@ -1,5 +1,3 @@
 #!/bin/sh
-. "_/husky.sh"
-. "/common.sh"
 
 npx --no-install commitlint --edit $1
