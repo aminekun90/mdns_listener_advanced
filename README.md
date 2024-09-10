@@ -51,6 +51,7 @@ const ref = 'MyDevice2';
 const mdns = new Core([ref], null, {
   debug: false,
   disableListener: false,
+  disablePublisher:false,
 });
 
 const event = mdns.listen();
@@ -148,7 +149,8 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 | `new mdnsListenerAdvanced.Core(['MyDevice2']);`| hostsList     | `Array<string>`              | List of hostnames                                  |
 | `new advanced_mdns(..,mdnsHostsPath)`          | mdnsHostsPath | `string`                     | Full path of your .mdns-hosts  (not available)     |
 | `new advanced_mdns(..,..,options)`             | options       | `{debug:boolean}`            | Enable debug default value is `false`              |
-| `new advanced_mdns(..,..,options)`             | options       | `{disableListener:boolean}`  | Disable listener the default value is `false` set it to `true` to use only publish mode     |
+| `new advanced_mdns(..,..,options)`             | options       | `{disableListener:boolean}`  | Disable listener the default value is `false`      |
+| `new advanced_mdns(..,..,options)`             | options       | `{disablePublisher:boolean}` | Disable publisher the default value is `false`     |
 | `.listen().on(event,callback(object))`         | event         | `string`                     | To catch a response event when set to `"response"` |
 |                                                | callback      | `function(object)`           | callback to do custome code                        |
 |                                                | object        | `object`                     | a received object i.e `{MyDevice1:{...}}`          |

@@ -15,6 +15,7 @@ export class Core {
   private mdnsHostsFile?: string;
   private debugEnabled: boolean;
   private disableListener: boolean;
+  private disablePublisher:boolean;
   private error: boolean = false;
 
   /**
@@ -39,6 +40,7 @@ export class Core {
     this.mdnsHostsFile = mdnsHostsPath ?? undefined;
     this.debugEnabled = !!options?.debug;
     this.disableListener = !!options?.disableListener;
+    this.disablePublisher = !!options?.disablePublisher;
   }
 
   /**
@@ -125,6 +127,10 @@ export class Core {
    * @param name
    */
   public publish(name: string) {
+    if(this.disablePublisher){
+      this.logger.info("Publisher is disabled unset 'Options.disablePublisher' or set it to 'false' to enable hosts publication !")
+      return;
+    }
     const options: ServiceConfig = {
       port: 3000,
       name: name,
