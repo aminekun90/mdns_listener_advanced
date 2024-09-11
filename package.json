@@ -24,7 +24,6 @@
     "node": ">=18.18.2"
   },
   "scripts": {
-    "postinstall": "npx husky init",
     "prepublishOnly": "pinst --disable",
     "postpublish": "pinst --enable",
     "start": "ts-node src/example.ts",
