@@ -6,6 +6,7 @@ module.exports = {
   },
   rules: {
     'prettier/prettier': 'error',
+    "quotes": [2, "double", { "avoidEscape": true }]
   },
   plugins: ['@typescript-eslint', 'prettier'],
 };

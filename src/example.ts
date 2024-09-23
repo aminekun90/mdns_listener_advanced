@@ -5,6 +5,7 @@ const ref = 'MyDevice2';
 const mdns = new Core([ref], null, {
   debug: false,
   disableListener: false,
+  disablePublisher: false,
 });
 const logger = new Logger()
 const event = mdns.listen();
