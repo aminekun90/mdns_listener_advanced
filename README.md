@@ -4,8 +4,8 @@
 ![node-current](https://img.shields.io/node/v/mdns-listener-advanced)
 [![Socket Badge](https://socket.dev/api/badge/npm/package/mdns-listener-advanced)](https://socket.dev/npm/package/mdns-listener-advanced)
 
-**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 14.5 and windows 11 and ubuntu 20.04
-If you have any issue feel free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues) 
+**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 15 and windows 11 and ubuntu 20.04
+If you have any issue feel free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues)
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
 
