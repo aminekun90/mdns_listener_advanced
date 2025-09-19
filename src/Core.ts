@@ -1,11 +1,11 @@
-import { platform, networkInterfaces } from "os";
-import { existsSync, readFileSync } from "fs";
-import { EventEmitter } from "events";
-import { Device, DeviceBuffer, DeviceData, NPM_URL, Options, EmittedEvent } from "./types";
-import mDNS from "multicast-dns";
 import { Bonjour, ServiceConfig } from "bonjour-service";
+import { EventEmitter } from "events";
+import { existsSync, readFileSync } from "fs";
+import mDNS from "multicast-dns";
+import { networkInterfaces, platform } from "os";
 import { Logger } from "tslog";
 import { v4 as uuidv4 } from "uuid";
+import { Device, DeviceBuffer, DeviceData, EmittedEvent, NPM_URL, Options } from "./types";
 
 /**
  * MDNS Advanced Core Class
@@ -181,14 +181,20 @@ export class Core {
    */
   private handleBufferData(dataBuffer: Buffer): { [key: string]: string } {
     const str = dataBuffer.toString("utf8");
-    const propertiesMatch = str.match(/(\w+)=("[^"]*"|\S+)/g);
     const properties: { [key: string]: string } = {};
-    if (propertiesMatch) {
-      propertiesMatch.forEach((prop) => {
-        const [key, value] = prop.split("=");
-        properties[key] = value.replace(/"/g, "");
-      });
+
+    // Regex to match key=value where value can be quoted with escaped quotes
+    const regex = /([^=\s]+)=("((?:\\.|[^"\\])*)"|[^\s"]+)/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(str)) !== null) {
+      const key = match[1];
+      let value = match[3] !== undefined ? match[3] : match[2]; // match[3] exists if quoted
+      // Unescape any \" inside quoted strings
+      value = value.replace(/\\"/g, '"');
+      properties[key] = value;
     }
+
     return properties;
   }
 

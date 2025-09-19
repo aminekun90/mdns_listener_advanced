@@ -82,3 +82,17 @@ Further details of specific enforcement policies may be posted separately.
 Project maintainers who do not follow or enforce the Code of Conduct in good
 faith may face temporary or permanent repercussions as determined by other
 members of the project's leadership.
+
+### Commit issues
+
+If you get this error :
+
+```shell
+Error: Cannot find module "@commitlint/config-conventional"
+```
+
+make sure you have installed globally :
+
+```shell
+npm install -g @commitlint/cli @commitlint/config-conventional
+```
