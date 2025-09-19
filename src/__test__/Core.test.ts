@@ -1,9 +1,9 @@
-import { expect, jest, describe, beforeAll, afterAll, it, afterEach } from "@jest/globals";
+import { afterAll, afterEach, beforeAll, describe, expect, it, jest } from "@jest/globals";
 import { Core } from "@mdns-listener/Core";
 import { EmittedEvent, NPM_URL } from "@mdns-listener/types";
-import { EventEmitter } from "stream";
+import { Bonjour, Service } from "bonjour-service";
 import mDNS from "multicast-dns";
-import { Bonjour, Service, ServiceConfig } from "bonjour-service";
+import { EventEmitter } from "stream";
 
 jest.mock("multicast-dns", () => {
   return jest.fn(() => {
@@ -195,7 +195,7 @@ describe("Core", () => {
     });
 
     //TODO : Fix this
-    it.skip("should handle quoted values with special characters", () => {
+    it("should handle quoted values with special characters", () => {
       const buffer = Buffer.from('key1="value with \\"quotes\\"" key2=unquotedValue');
       const result = core["handleBufferData"](buffer);
       expect(result).toEqual({
@@ -214,7 +214,7 @@ describe("Core", () => {
     });
 
     // TODO: fix this
-    it.skip("should handle keys and values with special characters", () => {
+    it("should handle keys and values with special characters", () => {
       const buffer = Buffer.from('key!@#="value!@#" key2=value2');
       const result = core["handleBufferData"](buffer);
       expect(result).toStrictEqual({
