@@ -184,7 +184,7 @@ export class Core {
     const properties: { [key: string]: string } = {};
 
     // Regex to match key=value where value can be quoted with escaped quotes
-    const regex = /([^=\s]+)=("((?:\\.|[^"])*)"|[^\s"]+)/g;
+    const regex = /([^=\s]+)=("((?:\\.|[^"\\])*)"|[^\s"]+)/g;
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(str)) !== null) {
