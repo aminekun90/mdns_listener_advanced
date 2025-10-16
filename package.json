@@ -1,6 +1,6 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "mDNS listener, add as many .local hostnames to your computer as you like.",
   "author": "aminekun90",
   "funding": [
@@ -45,7 +45,8 @@
     "@mdns-listener": "dist/cjs"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": false
   },
   "repository": {
     "type": "git",

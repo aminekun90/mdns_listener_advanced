@@ -3,17 +3,19 @@ name: Release & Publish
 on:
   push:
     tags:
-      - 'v*'
-
+      - "v*"
+permissions:
+  contents: read
+  id-token: write
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4
       - name: Create Release
         id: create_release
-        uses: comnoco/create-release-action@v2.0.5
+        uses: comnoco/create-release-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -25,13 +27,15 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4
       - name: Setup .npmrc file to publish to npm
-        uses: actions/setup-node@v4.0.1
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "18.x"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Install modules
         run: npm install
       - name: Build
@@ -41,11 +45,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Setup .npmrc file to publish to GitHub Packages
-        uses: actions/setup-node@v4.0.1
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@aminekun90'
+          node-version: "18.x"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@aminekun90"
       - run: npm run addscope
       - name: Publish to GitHub Packages
         run: npm publish
