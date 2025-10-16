@@ -34,8 +34,6 @@ jobs:
           node-version: "18.x"
           cache: "npm"
           registry-url: "https://registry.npmjs.org"
-      - name: Update npm
-        run: npm install -g npm@latest
       - name: Install modules
         run: npm install
       - name: Build
