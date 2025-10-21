@@ -7,7 +7,7 @@ If you have any issue feel free to open an issue [here](https://github.com/amine
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
 
-I recommand using this python publisher https://github.com/aminekun90/python_zeroconf_publisher since this code is fully compatible with it, if you dont have access to it you can contact me further bellow :wink: I can make you an offer.
+I recommand using this python publisher <https://github.com/aminekun90/python_zeroconf_publisher> since this code is fully compatible with it, if you dont have access to it you can contact me further bellow :wink: I can make you an offer.
 
 - **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
 
@@ -16,7 +16,9 @@ I recommand using this python publisher https://github.com/aminekun90/python_zer
 - Node 18 or later (we recommend using [NVM](https://github.com/nvm-sh/nvm)) this package is using Node v20.13.1 as of today compatible with Node v22
 
 ## Installation
+
 `npm install mdns-listener-advanced`
+
 ## Usage
 
 ![JS](https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E)
@@ -37,9 +39,10 @@ event.on('error', (error) => {
 });
 
 ```
+
 **:white_check_mark: Fully tested**
 
-![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white) 
+![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 
 ```typescript
 import { Core, Device, EmittedEvent  } from 'mdns-listener-advanced';
@@ -75,11 +78,13 @@ event.on(EmittedEvent.ERROR, (error: Error) => {
 ```typescript
 mdns.stop();
 ```
-#### EmittedEvent Enum since v3.2.6 :
+
+#### EmittedEvent Enum since v3.2.6
 
 ```typescript
 import { EmittedEvent } from 'mdns-listener-advanced';
 ```
+
 | Name                              | Descripti                                |
 | --------------------------------- | ---------------------------------------- |
 | `EmittedEvent.RESPONSE`           | Emits when an mdns device is discovered  |
@@ -89,20 +94,25 @@ import { EmittedEvent } from 'mdns-listener-advanced';
 ## Configuration
 
 ### Method 1
+
 Provide hostnames list in the constructor like this :
 
 ```javascript
 var mdnsListenerAdvanced = require("mdns-listener-advanced");
 const mdns = new mdnsListenerAdvanced.Core(['MyDevice1','MyDevice2']);
 ```
+
 The file .mdns-hosts is created automatically.
 
 #### Method 2
+
 Add and Edit the file named .mdns-hosts, this file must be in your HOME directory for windows ``[HDD]:\Users\<username>\.mdns-hosts`` and for linux/Mac ``~/.mdns-hosts``, place hostnames ending on separate lines like so:
+
 ```
 myhost1
 myhost2
 ```
+
 You can specify the hostnames that you want to detect !
 
 Whenever you change this file, you should restart the service.
@@ -132,6 +142,7 @@ Output:
   }
 }
 ```
+
 Note that a warning will appear if you initialise the Core of `mdns-listener-advanced` without providing a hostname list or `~/.mdns-hosts` file path.
 
 ```bash
@@ -139,7 +150,8 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 ```
 
 - At the moment you cannot unpublish services undividually or by hostname and there might be a way using the included bonjour library.
-### Details :
+
+### Details
 
 | Functions                                      | Params        | Type                         | Description                                        |
 |------------------------------------------------|---------------|------------------------------|----------------------------------------------------|
@@ -155,11 +167,14 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 | `.publish(hostname)`                           | hostname      | `string`                     | to publish an mdns host protocol                   |
 | `.unpublishAll()`                              |               |                              | to unpublish all mdns host protocol                |
 
-## Buy me a coffee
+## Buy me a coffee keep the project alive
+
 [![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/aminebouzahar)
-#### Want to contribute or have any suggestions or questions?
+
+## Want to contribute or have any suggestions or questions?
 
 Contact me on Linkedin [Here](https://www.linkedin.com/in/amine-bouzahar/).
 
-##### Other notes
-Note: The original idea was from @Richie765 https://github.com/Richie765/mdns-listener and got updated and enhanced, few parts of the original code might still exist.
+## Other notes
+
+Note: The original idea was from @Richie765 <https://github.com/Richie765/mdns-listener> and got updated and enhanced, few parts of the original code might still exist.
