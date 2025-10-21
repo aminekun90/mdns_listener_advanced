@@ -3,7 +3,7 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/aminekun90/mdns_listener_advanced/graphs/commit-activity) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases) [![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions) [![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE) ![node-current](https://img.shields.io/node/v/mdns-listener-advanced) [![Socket Badge](https://socket.dev/api/badge/npm/package/mdns-listener-advanced)](https://socket.dev/npm/package/mdns-listener-advanced) [![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/mdns-listener-advanced)
 
 **:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS 15 and windows 11 and ubuntu 20.04
-If you have any issue feel free to open an issue [here](https://github.com/aminekun90/mdns_listener_advanced/issues)
+If you have any issue feel free to [open an issue here](https://github.com/aminekun90/mdns_listener_advanced/issues)
 
 Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
 
@@ -40,7 +40,7 @@ event.on('error', (error) => {
 
 ```
 
-**:white_check_mark: Fully tested**
+### :white_check_mark: Fully tested
 
 ![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 
@@ -79,7 +79,7 @@ event.on(EmittedEvent.ERROR, (error: Error) => {
 mdns.stop();
 ```
 
-#### EmittedEvent Enum since v3.2.6
+### EmittedEvent Enum since v3.2.6
 
 ```typescript
 import { EmittedEvent } from 'mdns-listener-advanced';
@@ -108,7 +108,7 @@ The file .mdns-hosts is created automatically.
 
 Add and Edit the file named .mdns-hosts, this file must be in your HOME directory for windows ``[HDD]:\Users\<username>\.mdns-hosts`` and for linux/Mac ``~/.mdns-hosts``, place hostnames ending on separate lines like so:
 
-```
+```shell
 myhost1
 myhost2
 ```
@@ -173,7 +173,7 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 
 ## Want to contribute or have any suggestions or questions?
 
-Contact me on Linkedin [Here](https://www.linkedin.com/in/amine-bouzahar/).
+Contact me on [Linkedin Here](https://www.linkedin.com/in/amine-bouzahar/).
 
 ## Other notes
 
