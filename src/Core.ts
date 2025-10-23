@@ -194,7 +194,9 @@ export class Core {
       }
     }
   }
-
+  public info(...args: any[]): void {
+    this.logger.info(...args);
+  }
   public stop(): void {
     this.logger.info("Stopping mdns listener...");
     try {

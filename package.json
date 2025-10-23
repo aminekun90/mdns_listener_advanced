@@ -38,7 +38,7 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
     "clean": "rimraf dist",
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "postinstall": "husky",
+    "prepare": "if [ -x node_modules/.bin/husky ]; then husky install; fi",
     "release": "yarn clean && yarn build && yarn test"
   },
   "dependencies": {
