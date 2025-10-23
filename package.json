@@ -38,7 +38,7 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
     "clean": "rimraf dist",
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "prepare": "if [ \"$CI\" != \"true\" ] && [ -x node_modules/.bin/husky ]; then husky install; fi",
+    "prepare": "node -e \"if (process.env.CI !== 'true' && require('fs').existsSync('node_modules/.bin/husky')) { require('child_process').execSync('npx husky install', { stdio: 'inherit' }); }\"",
     "release": "yarn clean && yarn build && yarn test"
   },
   "dependencies": {
