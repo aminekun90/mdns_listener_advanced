@@ -42,14 +42,18 @@ jobs:
           cache: "yarn"
 
       - name: Install dependencies
+        shell: bash
         run: yarn install --frozen-lockfile
 
       - name: Build package
+        shell: bash
         run: yarn build
 
       - name: Run tests
+        shell: bash
         run: yarn test
 
       - name: Test coverage (optional)
+        shell: bash
         if: success()
         run: yarn test:cov
