@@ -1,7 +1,7 @@
-/* eslint-disable */
+ 
 const fs = require('fs')
 const Path = require('path')
-/* eslint-enable */
+ 
 
 const allowedDirectories = [Path.join(__dirname, '../dist')]; // Define allowed directories
 

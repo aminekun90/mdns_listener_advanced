@@ -1,23 +1,47 @@
 {
   "compilerOptions": {
-    "target": "es2022",
-    "module": "commonjs",
-    "lib": ["es2022"],
+    "target": "ES2022", // Modern JS target
+    "module": "NodeNext", // ESM support
+    "moduleResolution": "NodeNext", // Required for Node ESM
+    "outDir": "dist",
+    "declaration": true, // Generate .d.ts files
+    "declarationMap": true, // Optional: map for debugging types
+    "sourceMap": true, // Map for debugging JS
+    "strict": true, // Enable all strict checks
+    "esModuleInterop": true, // Default interop with commonjs
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true, // Skip type checks of node_modules
+    "resolveJsonModule": true,
+    "noImplicitAny": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
     "baseUrl": ".",
     "paths": {
-      "*": ["./node_modules/*"],
-      "@mdns-listener/*": ["./src/*"]
-    },
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "moduleResolution": "node",
-    "skipLibCheck": true
+      "@/*": [
+        "src/*"
+      ] // Alias for imports
+    }
   },
-  "ts-node": {
-    "require": ["tsconfig-paths/register"]
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/__tests__/*", "examples/**/*"]
+  "include": [
+    "src/**/*",
+    "__tests__/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "esm",
+    "cjs",
+    "umd",
+    "types",
+    "*.log",
+    ".env",
+    "tools"
+  ]
 }

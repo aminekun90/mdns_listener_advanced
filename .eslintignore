@@ -1,6 +1,0 @@
-*.config.js
-*.config.ts
-*.test.js
-*.test.ts
-*.js
-dist

@@ -1,23 +1,23 @@
-import { Logger } from 'tslog';
-import { Core } from './Core';
-import { Device, EmittedEvent } from './types';
-const ref = 'MyDevice2';
+import { Core } from "@/Core.js";
+import { Device, EmittedEvent } from "@/types.js";
+import { Logger } from "tslog";
+const ref = "MyDevice2";
 const mdns = new Core([ref], null, {
   debug: false,
   disableListener: false,
   disablePublisher: false,
 });
-const logger = new Logger()
+const logger = new Logger();
 const event = mdns.listen();
 mdns.publish(ref);
 event.on(EmittedEvent.RESPONSE, (found_hostnames: Array<Device>) => {
-  logger.info('found hostnames', found_hostnames);
+  logger.info("found hostnames", found_hostnames);
   // mdns.stop();// To stop the listener
 });
 event.on(EmittedEvent.RAW_RESPONSE, (hosts: object) => {
-  logger.info('raw response', hosts);
+  logger.info("raw response", hosts);
 });
 event.on(EmittedEvent.ERROR, (error: Error) => {
-  logger.info('error', error);
+  logger.info("error", error);
   // mdns.stop();// To stop the listener
 });

@@ -1,92 +1,86 @@
+// src/Core.ts
 import { Bonjour, ServiceConfig } from "bonjour-service";
-import { EventEmitter } from "events";
-import { existsSync, readFileSync } from "fs";
-import mDNS from "multicast-dns";
-import { networkInterfaces, platform } from "os";
+import multicastDns, { ResponsePacket } from "multicast-dns";
+import { EventEmitter } from "node:events";
+import { existsSync, readFileSync } from "node:fs";
+import { networkInterfaces, platform } from "node:os";
 import { Logger } from "tslog";
 import { v4 as uuidv4 } from "uuid";
-import { Device, DeviceBuffer, DeviceData, EmittedEvent, NPM_URL, Options } from "./types";
+import { Device, DeviceBuffer, EmittedEvent, NPM_URL, Options } from "./types.js";
 
-/**
- * MDNS Advanced Core Class
- */
 export class Core {
   private hostnames: string[];
   private mdnsHostsFile?: string;
-  private debugEnabled: boolean;
+  private readonly debugEnabled: boolean;
   private disableListener: boolean;
   private disablePublisher: boolean;
-  private error: boolean = false;
+  private error = false;
 
-  /**
-   * Constructor
-   * @param hostsList
-   * @param mdnsHostsPath
-   * @param options
-   * @param logger
-   * @param mdns
-   * @param myEvent
-   */
+  private readonly mdnsInstance: ReturnType<typeof multicastDns>;
+  private readonly publisher: Bonjour;
+  private readonly myEvent: EventEmitter;
+  private readonly logger: Logger<any>;
+
   constructor(
     hostsList?: string[] | null,
     mdnsHostsPath?: string | null,
     options?: Options,
-    private logger: Logger<any> = new Logger({ name: "MDNS ADVANCED" }),
-    private mdns = mDNS(),
-    private myEvent = new EventEmitter(),
-    private publisher = new Bonjour(),
+    logger?: Logger<any>,
+    mdnsInstance?: ReturnType<typeof multicastDns>,
+    myEvent?: EventEmitter,
+    publisher?: Bonjour,
   ) {
     this.hostnames = hostsList ?? [];
     this.mdnsHostsFile = mdnsHostsPath ?? undefined;
     this.debugEnabled = !!options?.debug;
     this.disableListener = !!options?.disableListener;
     this.disablePublisher = !!options?.disablePublisher;
+
+    this.logger = logger ?? new Logger({ name: "MDNS ADVANCED" });
+    this.mdnsInstance = mdnsInstance ?? multicastDns();
+    this.myEvent = myEvent ?? new EventEmitter();
+    this.publisher = publisher ?? new Bonjour();
   }
 
-  /**
-   * Console debugging function
-   * @param  {...any} args
-   */
-  private debug(...args: unknown[]): void {
+  private debug(...args: unknown[]) {
     if (this.debugEnabled) {
-      this.logger.debug(...args);
+      this.logger.debug(...(args as [unknown, ...unknown[]]));
     }
   }
-
-  /**
-   * Initialize mdns listener
-   * @private
-   */
+  public setDisableListener(value: boolean): void {
+    this.disableListener = value;
+  }
+  public setDisablePublisher(value: boolean): void {
+    this.disablePublisher = value;
+  }
   private __initListener(): void {
     try {
-      this.hostnames = this.__getHosts()
-        .split("\n")
-        .map((name) => name.replace(/#.*/, "").trim()) // Remove comments and trim lines
-        .filter((name) => name.length > 0); // Remove empty lines
+      const hostsRaw = this.__getHosts();
+      this.hostnames = hostsRaw
+        .split(/\r?\n/)
+        .map((line) => line.replace(/#.*/, "").trim())
+        .filter(Boolean);
       if (!this.hostnames.length) {
         this.logger.warn("Hosts are empty");
       }
-    } catch (error) {
-      this.debug(error as Error);
+    } catch (err) {
+      this.debug(err as Error);
       this.error = true;
     }
   }
 
-  /**
-   * Get Hosts and validate constructor params
-   * @return {string}
-   * @private
-   */
   private __getHosts(): string {
     if (this.mdnsHostsFile && existsSync(this.mdnsHostsFile)) {
       return readFileSync(this.mdnsHostsFile, { encoding: "utf-8" });
     } else if (this.hostnames.length) {
-      return this.hostnames.join("\r\n");
+      // join with \n for cross-platform
+      return this.hostnames.join("\n");
     } else {
+      // fallback default
       this.mdnsHostsFile = platform().startsWith("win")
         ? `${process.env.HOMEPATH}\\.mdns-hosts`
         : `${process.env.HOME}/.mdns-hosts`;
-      if (existsSync(this.mdnsHostsFile)) {
+      if (this.mdnsHostsFile && existsSync(this.mdnsHostsFile)) {
         return this.__getHosts();
       }
       this.logger.warn("Hostnames or path to hostnames is not provided, listening to a host is compromised!");
@@ -94,30 +88,20 @@ export class Core {
     }
   }
 
-  /**
-   * Get Current Device IP
-   * @return {string | undefined}
-   * @private
-   */
   private getLocalIpAddress(): string | undefined {
     const ifaces = networkInterfaces();
     for (const name of Object.keys(ifaces)) {
-      const networkInterface = ifaces[name];
-      if (networkInterface) {
-        for (const address of networkInterface) {
-          if (!address.internal && address.family === "IPv4" && !address.address.startsWith("169.")) {
-            return address.address;
-          }
+      const net = ifaces[name];
+      if (!net) continue;
+      for (const addr of net) {
+        if (!addr.internal && addr.family === "IPv4" && !addr.address.startsWith("169.")) {
+          return addr.address;
         }
       }
     }
     return undefined;
   }
 
-  /**
-   * Publish a host using bonjour protocol
-   * @param name
-   */
   public publish(name: string) {
     if (this.disablePublisher) {
       this.logger.info(
@@ -127,11 +111,11 @@ export class Core {
     }
     const options: ServiceConfig = {
       port: 3000,
-      name: name,
+      name,
       type: "TXT",
       txt: {
         uuid: `"${uuidv4()}"`,
-        ipv4: JSON.stringify(this.getLocalIpAddress()),
+        ipv4: JSON.stringify(this.getLocalIpAddress() ?? ""),
       },
     };
     const bonjourService = this.publisher.publish(options);
@@ -140,19 +124,15 @@ export class Core {
     return bonjourService;
   }
 
-  /**
-   * Unpublish all hosts
-   */
   public unpublishAll(): void {
-    this.publisher.unpublishAll();
-    this.logger.info("All hostnames have been unpublished");
+    try {
+      this.publisher.unpublishAll();
+      this.logger.info("All hostnames have been unpublished");
+    } catch (err) {
+      this.debug("unpublishAll error", err);
+    }
   }
 
-  /**
-   * Listen to the network for hostnames
-   * @return {EventEmitter}
-   * @public
-   */
   public listen(): EventEmitter {
     if (this.disableListener) {
       this.logger.info("Listener is disabled");
@@ -161,79 +141,69 @@ export class Core {
 
     this.__initListener();
     if (this.error) {
-      this.myEvent.on(EmittedEvent.ERROR, (e) => {
-        this.logger.info(e.message);
-      });
       const errorMessage = `An error occurred while trying to listen to mdns! Report this error ${NPM_URL}`;
-      this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage));
+      process.nextTick(() => this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage)));
       return this.myEvent;
     }
     this.logger.info("Looking for hostnames...", this.hostnames);
 
-    this.mdns.on(EmittedEvent.RESPONSE, this.handleResponse.bind(this));
+    this.mdnsInstance.on(EmittedEvent.RESPONSE, this.handleResponse.bind(this));
     return this.myEvent;
   }
 
-  /**
-   * Handle buffer data and transform them to a JSON object
-   * @param dataBuffer
-   * @returns
-   */
   private handleBufferData(dataBuffer: Buffer): { [key: string]: string } {
     const str = dataBuffer.toString("utf8");
-    const properties: { [key: string]: string } = {};
-
-    // Regex to match key=value where value can be quoted with escaped quotes
+    const props: { [key: string]: string } = {};
     const regex = /([^=\s]+)=("((?:\\.|[^"\\])*)"|[^\s"]+)/g;
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(str)) !== null) {
       const key = match[1];
-      let value = match[3] !== undefined ? match[3] : match[2]; // match[3] exists if quoted
-      // Unescape any \" inside quoted strings
+      // if group 3 exists it's the inner quoted capture
+      let value = match[3] ?? match[2];
       value = value.replace(/\\"/g, '"');
-      properties[key] = value;
+      // strip surrounding quotes if still present
+      if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1);
+      }
+      props[key] = value;
     }
-
-    return properties;
+    return props;
   }
 
-  /**
-   * Handle mdns response
-   * @param response
-   */
-  private handleResponse(response: { answers: Array<DeviceBuffer> }): void {
+  private handleResponse(response: { answers: Array<DeviceBuffer> } | ResponsePacket): void {
     const findHosts: Array<Device> = [];
     this.debug("RESPONSE:", response);
     this.myEvent.emit(EmittedEvent.RAW_RESPONSE, response);
-    this.hostnames.forEach((hostname) => {
-      response.answers
-        .filter((a) => a.data && Array.isArray(a.data) && a.name.includes(hostname))
-        .forEach((a) => {
+
+    const answers = Array.isArray((response as any).answers) ? (response as any).answers : [];
+
+    for (const hostname of this.hostnames) {
+      for (const a of answers) {
+        if (a.data && Array.isArray(a.data) && a?.name?.includes(hostname)) {
           findHosts.push({
             name: a.name,
             type: a.type,
-            data: this.handleBufferData(a.data) as DeviceData,
+            data: this.handleBufferData(Buffer.concat((a.data as Buffer[]).map((d: any) => Buffer.from(d)))),
           });
-        });
+        }
+      }
 
       if (findHosts.length) {
         this.myEvent.emit(EmittedEvent.RESPONSE, findHosts);
       }
-    });
+    }
   }
-
-  /**
-   * Stop listening and remove all listeners
-   * @public
-   */
+  public info(...args: any[]): void {
+    this.logger.info(...args);
+  }
   public stop(): void {
     this.logger.info("Stopping mdns listener...");
-    if (this.mdns?.removeAllListeners) {
-      this.mdns.removeAllListeners();
-    }
-    if (this.myEvent?.removeAllListeners) {
-      this.myEvent.removeAllListeners();
+    try {
+      if (this.mdnsInstance?.removeAllListeners) this.mdnsInstance.removeAllListeners();
+      if (this.myEvent?.removeAllListeners) this.myEvent.removeAllListeners();
+    } catch (err) {
+      this.debug("stop error", err);
     }
   }
 }

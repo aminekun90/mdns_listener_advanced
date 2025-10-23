@@ -1,57 +1,59 @@
 name: Release & Publish
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+
 permissions:
   contents: write
   packages: write
   issues: write
   id-token: write
+
 jobs:
-  release:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Create Release
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "yarn"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build package
+        run: yarn build
+
+      - name: Create GitHub release
         id: create_release
         uses: comnoco/create-release-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          tag_name: ${{ github.event.workflow_run.head_branch }}
+          release_name: ${{ github.event.workflow_run.head_branch }}
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup .npmrc file to publish to npm
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18.x"
-          cache: "npm"
-          registry-url: "https://registry.npmjs.org"
-      - name: Install modules
-        run: npm install
-      - name: Build
-        run: npm run build
       - name: Publish to npm
-        run: npm publish --access public
+        run: yarn npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Setup .npmrc file to publish to GitHub Packages
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18.x"
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@aminekun90"
-      - run: npm run addscope
+
+      - name: Setup GitHub Packages scope
+        run: yarn run addscope
+
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: yarn npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
