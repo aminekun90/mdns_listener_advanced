@@ -1,14 +1,14 @@
 export interface Options {
   debug?: boolean | null;
   disableListener?: boolean;
-  disablePublisher?:boolean;
+  disablePublisher?: boolean;
 }
-export const NPM_URL = 'https://www.npmjs.com/package/mdns-listener-advanced';
+export const NPM_URL = "https://www.npmjs.com/package/mdns-listener-advanced";
 
 export type Device = {
   name: string;
   type: string;
-  data: DeviceData;
+  data: DeviceData | { [key: string]: string };
 };
 export type DeviceBuffer = {
   name: string;
@@ -24,7 +24,7 @@ export type DeviceData = {
  * Emitted event const
  */
 export enum EmittedEvent {
-  RESPONSE = 'response',
-  RAW_RESPONSE = 'rawResponse',
-  ERROR = 'error',
+  RESPONSE = "response",
+  RAW_RESPONSE = "rawResponse",
+  ERROR = "error",
 }

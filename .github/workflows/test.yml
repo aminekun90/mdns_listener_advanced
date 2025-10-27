@@ -19,6 +19,7 @@ on:
     branches:
       - main
       - master
+
 permissions:
   contents: read
 
@@ -27,18 +28,32 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-        node: [18.x, 20.x]
+        os: [ubuntu-latest, windows-latest]
+        node: [20.x, 22.x]
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node.js
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - name: Install modules
-        run: yarn
+          cache: "yarn"
+
+      - name: Install dependencies
+        shell: bash
+        run: yarn install --frozen-lockfile
+
+      - name: Build package
+        shell: bash
+        run: yarn build
+
       - name: Run tests
+        shell: bash
         run: yarn test
+
+      - name: Test coverage (optional)
+        shell: bash
+        if: success()
+        run: yarn test:cov
