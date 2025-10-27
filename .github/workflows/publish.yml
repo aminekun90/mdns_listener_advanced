@@ -1,10 +1,13 @@
 name: Release & Publish
 
 on:
-  workflow_run:
-    workflows: ["Test"]
-    types:
-      - completed
+  # Trigger automatically when a version tag is pushed, e.g. v1.0.0
+  push:
+    tags:
+      - "v*"
+
+  # Allow manual trigger
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -14,12 +17,13 @@ permissions:
 
 jobs:
   publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # ensure all tags are available
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,32 +32,44 @@ jobs:
           cache: "yarn"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Determine latest tag
+        id: get_tag
+        run: |
+          latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+          echo "Detected latest tag: $latest_tag"
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
       - name: Build package
         run: yarn build
 
-      - name: Create GitHub release
+      - name: Create GitHub Release (if not exists)
         id: create_release
-        uses: comnoco/create-release-action@v2
-        with:
-          tag_name: ${{ github.event.workflow_run.head_branch }}
-          release_name: ${{ github.event.workflow_run.head_branch }}
-          draft: false
-          prerelease: false
+        run: |
+          tag="$latest_tag"
+          echo "Checking if release already exists for tag: $tag"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "⚠️ Release for $tag already exists. Skipping publish."
+            echo "release_created=false" >> $GITHUB_ENV
+          else
+            gh release create "$tag" --title "$tag" --notes "Automated release for $tag"
+            echo "✅ Release created for $tag"
+            echo "release_created=true" >> $GITHUB_ENV
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npm
-        run: yarn npm publish --access public
+        if: env.release_created == 'true'
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Setup GitHub Packages scope
-        run: yarn run addscope
-
       - name: Publish to GitHub Packages
-        run: yarn npm publish
+        if: env.release_created == 'true'
+        run: npm publish --registry=https://npm.pkg.github.com/
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
