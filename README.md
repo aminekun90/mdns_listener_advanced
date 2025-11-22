@@ -13,7 +13,7 @@ I recommand using this python publisher <https://github.com/aminekun90/python_ze
 
 ## Requirements
 
-- Node 18 or later (we recommend using [NVM](https://github.com/nvm-sh/nvm)) this package is using Node v20.13.1 as of today compatible with Node v22
+- Node 22 or later (we recommend using [NVM](https://github.com/nvm-sh/nvm)) this package is using Node v22 as of today.
 
 ## Installation
 
@@ -26,15 +26,30 @@ I recommand using this python publisher <https://github.com/aminekun90/python_ze
 Fully tested on windows 11, ubuntu 18 and Mac OS 14.
 
 ```javascript
-var mdnsListenerAdvanced = require("mdns-listener-advanced");
-const mdns = new mdnsListenerAdvanced.Core(['MyDevice2']);
+// Usage since v3.3.4 in javascript
+import Core, { EmittedEvent } from "mdns-listener-advanced";
+
+const ref = "MyDevice2";
+const mdns = new Core([ref], null, {
+  debug: false,
+  disableListener: false,
+  disablePublisher: false,
+});
+
 const event = mdns.listen();
-event.on('response', (found_hostnames) => {
-  console.log('found_hostnames', found_hostnames);
+mdns.publish(ref);
+// Basic response of 'MyDevice2'
+event.on(EmittedEvent.RESPONSE, (found_hostnames) => {
+  mdns.info("found hostnames", found_hostnames);
   // mdns.stop();// To stop the listener
 });
-event.on('error', (error) => {
-  console.log('error', error);
+// Array of objects of different types
+event.on(EmittedEvent.RAW_RESPONSE, (hosts) => {
+  mdns.info("raw response", hosts);
+});
+//Error occured
+event.on(EmittedEvent.ERROR, (error) => {
+  mdns.info("error", error);
   // mdns.stop();// To stop the listener
 });
 
@@ -85,11 +100,11 @@ mdns.stop();
 import { EmittedEvent } from 'mdns-listener-advanced';
 ```
 
-| Name                              | Descripti                                |
-| --------------------------------- | ---------------------------------------- |
-| `EmittedEvent.RESPONSE`           | Emits when an mdns device is discovered  |
-| `EmittedEvent.RAW_RESPONSE`       | Emits raw data of the mdns response   |
-| `EmittedEvent.ERROR`              | Emits on any errors                      |
+| Name                        | Descripti                               |
+| --------------------------- | --------------------------------------- |
+| `EmittedEvent.RESPONSE`     | Emits when an mdns device is discovered |
+| `EmittedEvent.RAW_RESPONSE` | Emits raw data of the mdns response     |
+| `EmittedEvent.ERROR`        | Emits on any errors                     |
 
 ## Configuration
 
@@ -153,19 +168,19 @@ Note that a warning will appear if you initialise the Core of `mdns-listener-adv
 
 ### Details
 
-| Functions                                      | Params        | Type                         | Description                                        |
-|------------------------------------------------|---------------|------------------------------|----------------------------------------------------|
-| `new mdnsListenerAdvanced.Core(['MyDevice2']);`| hostsList     | `Array<string>`              | List of hostnames                                  |
-| `new advanced_mdns(..,mdnsHostsPath)`          | mdnsHostsPath | `string`                     | Full path of your .mdns-hosts  (not available)     |
-| `new advanced_mdns(..,..,options)`             | options       | `{debug:boolean}`            | Enable debug default value is `false`              |
-| `new advanced_mdns(..,..,options)`             | options       | `{disableListener:boolean}`  | Disable listener the default value is `false`      |
-| `new advanced_mdns(..,..,options)`             | options       | `{disablePublisher:boolean}` | Disable publisher the default value is `false`     |
-| `.listen().on(event,callback(object))`         | event         | `string`                     | To catch a response event when set to `"response"` |
-|                                                | callback      | `function(object)`           | callback to do custome code                        |
-|                                                | object        | `object`                     | a received object i.e `{MyDevice1:{...}}`          |
-| `.stop()`                                      |               |                              | to stop the event listener                         |
-| `.publish(hostname)`                           | hostname      | `string`                     | to publish an mdns host protocol                   |
-| `.unpublishAll()`                              |               |                              | to unpublish all mdns host protocol                |
+| Functions                                       | Params        | Type                         | Description                                        |
+| ----------------------------------------------- | ------------- | ---------------------------- | -------------------------------------------------- |
+| `new mdnsListenerAdvanced.Core(['MyDevice2']);` | hostsList     | `Array<string>`              | List of hostnames                                  |
+| `new advanced_mdns(..,mdnsHostsPath)`           | mdnsHostsPath | `string`                     | Full path of your .mdns-hosts  (not available)     |
+| `new advanced_mdns(..,..,options)`              | options       | `{debug:boolean}`            | Enable debug default value is `false`              |
+| `new advanced_mdns(..,..,options)`              | options       | `{disableListener:boolean}`  | Disable listener the default value is `false`      |
+| `new advanced_mdns(..,..,options)`              | options       | `{disablePublisher:boolean}` | Disable publisher the default value is `false`     |
+| `.listen().on(event,callback(object))`          | event         | `string`                     | To catch a response event when set to `"response"` |
+|                                                 | callback      | `function(object)`           | callback to do custome code                        |
+|                                                 | object        | `object`                     | a received object i.e `{MyDevice1:{...}}`          |
+| `.stop()`                                       |               |                              | to stop the event listener                         |
+| `.publish(hostname)`                            | hostname      | `string`                     | to publish an mdns host protocol                   |
+| `.unpublishAll()`                               |               |                              | to unpublish all mdns host protocol                |
 
 ## Buy me a coffee keep the project alive
 
