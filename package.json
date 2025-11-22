@@ -1,6 +1,6 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "3.3.4",
+  "version": "3.3.5",
   "description": "Advanced mDNS listener — discover and publish .local hostnames easily.",
   "author": "aminekun90",
   "license": "MIT",
@@ -51,12 +51,12 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@types/multicast-dns": "^7.2.4",
-    "@types/node": "^24.9.1",
+    "@types/node": "^24.10.1",
     "@types/uuid": "^11.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.46.2",
-    "@typescript-eslint/parser": "^8.46.2",
-    "@vitest/coverage-v8": "^3.2.4",
-    "eslint": "^9.38.0",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "@vitest/coverage-v8": "^4.0.13",
+    "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-define-config": "^2.1.0",
     "eslint-plugin": "^1.0.1",
@@ -64,13 +64,13 @@
     "eslint-plugin-vitest": "^0.5.4",
     "husky": "^9.1.7",
     "jiti": "^2.6.1",
-    "lint-staged": "^15.2.10",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
-    "tsup": "^8.3.0",
+    "rimraf": "^6.1.2",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.13"
   },
   "lint-staged": {
     "src/**/*.{ts,js,json,md}": [
