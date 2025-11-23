@@ -128,6 +128,11 @@ jobs:
 
       - name: Publish to GitHub Packages
         continue-on-error: true
-        run: npm publish --registry=https://npm.pkg.github.com/
+        run: |
+          # Authenticate specifically for GitHub Packages
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
+          # Publish
+          npm publish --registry=https://npm.pkg.github.com/
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
