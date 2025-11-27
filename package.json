@@ -1,12 +1,12 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "3.3.6",
+  "version": "3.3.7",
   "description": "Advanced mDNS listener — discover and publish .local hostnames easily.",
   "author": "aminekun90",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aminekun90/mdns-listener-advanced.git"
+    "url": "git+https://github.com/aminekun90/mdns-listener-advanced.git"
   },
   "homepage": "https://github.com/aminekun90/mdns-listener-advanced#readme",
   "bugs": {
