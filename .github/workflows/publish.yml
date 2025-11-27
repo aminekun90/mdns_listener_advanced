@@ -34,21 +34,16 @@ jobs:
           cache: "yarn"
           registry-url: "https://registry.npmjs.org"
 
-      # Logic to ensure SemVer (v1.0.0) instead of branch name
       - name: Determine Release Version
         id: get_tag
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            # Triggered via Tag Push
             TAG_NAME=${{ github.ref_name }}
             echo "TARGET_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "Triggered by tag: $TAG_NAME"
           else
-            # Triggered Manually - Read from package.json
             VERSION=$(node -p "require('./package.json').version")
             TAG_NAME="v$VERSION"
             echo "TARGET_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
-            echo "Triggered manually. Target tag: $TAG_NAME"
           fi
 
       - name: Install & Build
@@ -62,30 +57,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.get_tag.outputs.TARGET_TAG }}
         run: |
-          echo "Checking for existing release: $TAG"
-
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "⚠️ Release $TAG already exists."
             echo "release_created=true" >> $GITHUB_OUTPUT
           else
-            echo "Creating release for $TAG..."
-            gh release create "$TAG" \
-              --title "$TAG" \
-              --generate-notes \
-              --target ${{ github.sha }}
-            
-            echo "✅ Release created successfully."
+            gh release create "$TAG" --title "$TAG" --generate-notes --target ${{ github.sha }}
             echo "release_created=true" >> $GITHUB_OUTPUT
-          fi
 
-  # JOB 2: Publish (Waits for Approval)
+  # JOB 2: Security Audit + Publish
   publish-npm:
-    name: Publish to NPM
+    name: Audit & Publish
     needs: create-release
     runs-on: ubuntu-latest
     if: needs.create-release.outputs.release_created == 'true'
-
-    # THIS IS THE KEY: It forces the workflow to pause and wait for you
     environment:
       name: npm-publish
       url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
@@ -94,7 +77,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.create-release.outputs.target_tag }} # Checkout the specific tag created in Job 1
+          ref: ${{ needs.create-release.outputs.target_tag }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -103,36 +86,41 @@ jobs:
           cache: "yarn"
           registry-url: "https://registry.npmjs.org"
 
-      - name: Verify Tag and Release Existence
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.create-release.outputs.target_tag }}
-        run: |
-          echo "Double checking that tag $TAG exists before publishing..."
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "✅ Tag and Release verified. Proceeding to publish."
-          else
-            echo "❌ Error: Release $TAG not found on GitHub!"
-            exit 1
-          fi
-
       - name: Install & Build
         run: |
           yarn install --frozen-lockfile
           yarn build
 
+      # -----------------------------
+      #  Run Shai-Hulud Security Audit
+      # -----------------------------
+      - name: Run Shai-Hulud Audit
+        shell: bash
+        run: |
+          chmod +x ./shai-hulud-audit.sh
+          ./shai-hulud-audit.sh --no-color --save-report || true
+
+      - name: Upload Audit Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: shai-hulud-audit-${{ github.run_number }}
+          path: "*.log"
+          retention-days: 7
+
+      # -----------------------------
+      #  Publish to public NPM
+      # -----------------------------
       - name: Publish to NPM
-        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
+      # -----------------------------
+      #  Publish to GitHub Packages
+      # -----------------------------
       - name: Publish to GitHub Packages
-        continue-on-error: true
-        run: |
-          # Authenticate specifically for GitHub Packages
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-
-          # Publish
-          npm publish --registry=https://npm.pkg.github.com/
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          npm publish --registry=https://npm.pkg.github.com/
