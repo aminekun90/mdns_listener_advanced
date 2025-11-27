@@ -72,6 +72,6 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: security-audit-report
+          name: security-audit-report-${{ matrix.os }}-node${{ matrix.node }}-${{ github.run_number }}
           path: "*.log"
           retention-days: 7
