@@ -7,18 +7,14 @@ on:
       - "README.md"
       - "LICENSE"
       - ".editorconfig"
-    branches:
-      - main
-      - master
+    branches: [main, master]
   pull_request:
     paths-ignore:
       - "docs/**"
       - "README.md"
       - "LICENSE"
       - ".editorconfig"
-    branches:
-      - main
-      - master
+    branches: [main, master]
 
 permissions:
   contents: read
@@ -57,3 +53,25 @@ jobs:
         shell: bash
         if: success()
         run: yarn test:cov
+
+      # --------------------------------------------------------------------
+      # SECURITY AUDIT (LINUX ONLY)
+      # --------------------------------------------------------------------
+      - name: Set permissions on audit script
+        if: matrix.os == 'ubuntu-latest'
+        run: chmod +x ./shai-hulud-audit.sh
+
+      - name: Shai-Hulud Audit Security
+        if: matrix.os == 'ubuntu-latest' && success()
+        shell: bash
+        run: |
+          ./shai-hulud-audit.sh --no-color --save-report
+        continue-on-error: true # 🚨 DO NOT FAIL THE PIPELINE
+
+      - name: Upload security audit report
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report-${{ matrix.os }}-node${{ matrix.node }}-${{ github.run_number }}
+          path: "*.log"
+          retention-days: 7
