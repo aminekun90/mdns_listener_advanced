@@ -57,3 +57,9 @@ jobs:
         shell: bash
         if: success()
         run: yarn test:cov
+
+      - name: Shai-Hulud Audit Security
+        shell: bash
+        if: success()
+        run: |
+          ./shai-hulud-audit.sh
