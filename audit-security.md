@@ -25,6 +25,8 @@ Your library uses other packages (multicast-dns, bonjour-service, etc.). If one 
 
 ```sh
 npm audit
+or 
+yarn audit
 ```
 
 Fix all critical vulnerabilities.
@@ -71,4 +73,4 @@ Based on your NPM link, your package has few direct dependencies (`bonjour-servi
 
 Low risk: These are established packages.
 
-Verification: Check manually in your `package-lock.json` if the version of `multicast-dns` or `bonjour-service` points to a strange URL or an unknown Git fork.
+Verification: Check manually in your `package-lock.json` or `yarn.lock` if the version of `multicast-dns` or `bonjour-service` or any other dependency points to a strange URL or an unknown Git fork.
