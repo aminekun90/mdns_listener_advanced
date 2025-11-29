@@ -1,15 +1,13 @@
- 
-const fs = require('fs')
-const Path = require('path')
- 
+const fs = require("fs");
+const Path = require("path");
 
-const allowedDirectories = [Path.join(__dirname, '../dist')]; // Define allowed directories
+const allowedDirectories = [Path.join(__dirname, "../dist")]; // Define allowed directories
 
 const deleteFolderRecursive = (dirPath) => {
   const sanitizedPath = Path.resolve(dirPath);
 
-  if (!allowedDirectories.some(directory => sanitizedPath.includes(directory))) {
-    console.error('Invalid path.'); // Input path is not in the allowed directories
+  if (!allowedDirectories.some((directory) => sanitizedPath.includes(directory))) {
+    console.error("Invalid path."); // Input path is not in the allowed directories
     return;
   }
 
@@ -26,13 +24,13 @@ const deleteFolderRecursive = (dirPath) => {
   }
 };
 
-const folder = process.argv.slice(2)[0]
+const folder = process.argv.slice(2)[0];
 
 if (folder) {
-  deleteFolderRecursive(Path.join(__dirname, '../dist', folder))
+  deleteFolderRecursive(Path.join(__dirname, "../dist", folder));
 } else {
-  deleteFolderRecursive(Path.join(__dirname, '../dist/cjs'))
-  deleteFolderRecursive(Path.join(__dirname, '../dist/esm'))
-  deleteFolderRecursive(Path.join(__dirname, '../dist/umd'))
-  deleteFolderRecursive(Path.join(__dirname, '../dist/types'))
+  deleteFolderRecursive(Path.join(__dirname, "../dist/cjs"));
+  deleteFolderRecursive(Path.join(__dirname, "../dist/esm"));
+  deleteFolderRecursive(Path.join(__dirname, "../dist/umd"));
+  deleteFolderRecursive(Path.join(__dirname, "../dist/types"));
 }

@@ -3,7 +3,8 @@ import { Bonjour, ServiceConfig } from "bonjour-service";
 import multicastDns, { ResponsePacket } from "multicast-dns";
 import { EventEmitter } from "node:events";
 import { existsSync, readFileSync } from "node:fs";
-import { networkInterfaces, platform } from "node:os";
+import { homedir, networkInterfaces } from "node:os";
+import { join } from "node:path";
 import { Logger } from "tslog";
 import { v4 as uuidv4 } from "uuid";
 import { Device, DeviceBuffer, EmittedEvent, NPM_URL, Options } from "./types.js";
@@ -72,20 +73,23 @@ export class Core {
   private __getHosts(): string {
     if (this.mdnsHostsFile && existsSync(this.mdnsHostsFile)) {
       return readFileSync(this.mdnsHostsFile, { encoding: "utf-8" });
-    } else if (this.hostnames.length) {
-      // join with \n for cross-platform
-      return this.hostnames.join("\n");
-    } else {
-      // fallback default
-      this.mdnsHostsFile = platform().startsWith("win")
-        ? `${process.env.HOMEPATH}\\.mdns-hosts`
-        : `${process.env.HOME}/.mdns-hosts`;
-      if (this.mdnsHostsFile && existsSync(this.mdnsHostsFile)) {
-        return this.__getHosts();
-      }
-      this.logger.warn("Hostnames or path to hostnames is not provided, listening to a host is compromised!");
-      throw new Error(`Provide hostnames or path to hostnames! Report this error ${NPM_URL}`);
     }
+
+    if (this.hostnames && this.hostnames.length > 0) {
+      return this.hostnames.join("\n");
+    }
+
+
+    const defaultFile = join(homedir(), '.mdns-hosts');
+
+    if (existsSync(defaultFile)) {
+      this.mdnsHostsFile = defaultFile;
+      return readFileSync(defaultFile, { encoding: "utf-8" });
+    }
+
+
+    this.logger.warn("Hostnames or path to hostnames is not provided, listening to a host is compromised!");
+    throw new Error(`Provide hostnames or path to hostnames! Report this error ${NPM_URL}`);
   }
 
   private getLocalIpAddress(): string | undefined {

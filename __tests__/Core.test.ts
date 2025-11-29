@@ -4,6 +4,7 @@ import { Bonjour } from "bonjour-service";
 import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import * as os from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("node:fs", async (importOriginal) => {
@@ -21,6 +22,15 @@ vi.mock("node:os", async (importOriginal) => {
     ...actual,
     networkInterfaces: vi.fn(),
     platform: vi.fn(() => "linux"),
+    homedir: vi.fn(() => "/home/test"),
+  };
+});
+
+vi.mock("node:path", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:path")>();
+  return {
+    ...actual,
+    join: vi.fn(),
   };
 });
 
@@ -135,7 +145,8 @@ describe("Core", () => {
 
   it("should fallback to OS default path and recurse (Linux)", () => {
     vi.mocked(os.platform).mockReturnValue("linux");
-    process.env.HOME = "/home/test";
+    vi.mocked(os.homedir).mockReturnValue("/home/test");
+    vi.mocked(join).mockImplementation((...paths: string[]) => paths.join("/"));
     vi.mocked(fs.existsSync).mockImplementation((path) => path === "/home/test/.mdns-hosts");
     vi.mocked(fs.readFileSync).mockReturnValue("linux-host");
 
@@ -148,7 +159,8 @@ describe("Core", () => {
 
   it("should fallback to OS default path (Windows)", () => {
     vi.mocked(os.platform).mockReturnValue("win32");
-    process.env.HOMEPATH = `C:\\Users\\Test`;
+    vi.mocked(os.homedir).mockReturnValue(`C:\\Users\\Test`);
+    vi.mocked(join).mockImplementation((...paths: string[]) => paths.join("\\"));
     vi.mocked(fs.existsSync).mockImplementation((path) => path === `C:\\Users\\Test\\.mdns-hosts`);
     vi.mocked(fs.readFileSync).mockReturnValue("win-host");
 
