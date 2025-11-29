@@ -46,10 +46,12 @@ const bonjourInstanceMock = {
 
 vi.mock("bonjour-service", () => {
   return {
-    Bonjour: class {
+    // ignore annoying soarqube warning about class with constructor only
+    Bonjour: class { // NOSONAR
       constructor() {
-        return bonjourInstanceMock;
+        return bonjourInstanceMock; // NOSONAR
       }
+
     },
   };
 });
