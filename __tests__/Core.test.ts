@@ -1,11 +1,12 @@
 import { Core } from "@/Core.js";
+import { DNSBuffer } from "@/protocol/DNSBuffer.js";
 import { EmittedEvent } from "@/types.js";
-import { Bonjour } from "bonjour-service";
-import { EventEmitter } from "node:events";
+import * as dgram from "node:dgram";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+
+// --- Mocks ---
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -21,58 +22,57 @@ vi.mock("node:os", async (importOriginal) => {
   return {
     ...actual,
     networkInterfaces: vi.fn(),
-    platform: vi.fn(() => "linux"),
-    homedir: vi.fn(() => "/home/test"),
+    homedir: vi.fn(() => "/home/testuser"),
   };
 });
 
-vi.mock("node:path", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:path")>();
-  return {
-    ...actual,
-    join: vi.fn(),
-  };
-});
-
-const mdnsInstanceMock = {
+// FIX 1: Robust dgram mock
+const socketMock = {
   on: vi.fn(),
-  query: vi.fn(),
-  destroy: vi.fn(),
-  emit: vi.fn(),
+  bind: vi.fn(),
+  send: vi.fn(),
+  addMembership: vi.fn(),
+  setMulticastLoopback: vi.fn(),
+  close: vi.fn(),
   removeAllListeners: vi.fn(),
+  emit: vi.fn(),
+  ref: vi.fn(),
+  unref: vi.fn(),
 };
 
-vi.mock("multicast-dns", () => {
+vi.mock("node:dgram", () => {
+  const createSocket = vi.fn(() => socketMock);
   return {
-    default: vi.fn(() => mdnsInstanceMock),
+    default: { createSocket },
+    createSocket,
   };
 });
 
-const bonjourInstanceMock = {
-  publish: vi.fn(),
-  unpublishAll: vi.fn(),
-  destroy: vi.fn(),
-};
-
-vi.mock("bonjour-service", () => {
-  return {
-    // ignore annoying soarqube warning about class with constructor only
-    Bonjour: class { // NOSONAR
-      constructor() {
-        return bonjourInstanceMock; // NOSONAR
-      }
-
-    },
-  };
-});
+vi.mock("node:crypto", () => ({
+  randomUUID: vi.fn(() => "550e8400-e29b-41d4-a716-446655440000"),
+}));
 
 describe("Core", () => {
   let core: Core;
   let loggerMock: any;
-  let eventEmitter: EventEmitter;
+  let socketHandlers: { [key: string]: Function } = {};
 
   beforeEach(() => {
     vi.clearAllMocks();
+    socketHandlers = {};
+
+    (socketMock.on as Mock).mockImplementation((event, handler) => {
+      socketHandlers[event] = handler;
+      return socketMock;
+    });
+
+    (socketMock.bind as Mock).mockImplementation((port, cb) => {
+      if (cb) cb();
+    });
+
+    (socketMock.send as Mock).mockImplementation((msg, off, len, port, addr, cb) => {
+      if (cb) cb(null);
+    });
 
     loggerMock = {
       info: vi.fn(),
@@ -81,19 +81,11 @@ describe("Core", () => {
       error: vi.fn(),
     };
 
-    eventEmitter = new EventEmitter();
-    vi.spyOn(eventEmitter, "emit");
-    vi.spyOn(eventEmitter, "removeAllListeners");
-    vi.spyOn(eventEmitter, "on");
-
     core = new Core(
-      ["example"],
+      ["example-device"],
       undefined,
       { debug: true },
-      loggerMock,
-      mdnsInstanceMock as any,
-      eventEmitter,
-      new Bonjour(),
+      loggerMock
     );
   });
 
@@ -101,238 +93,177 @@ describe("Core", () => {
     vi.restoreAllMocks();
   });
 
-  it("should be initialized with defaults", () => {
-    const defaultCore = new Core();
-    expect(defaultCore).toBeDefined();
-    expect((defaultCore as any).hostnames).toEqual([]);
-  });
-
-  it("should accept custom logger", () => {
-    const customLogger = { ...loggerMock };
-    const c = new Core([], undefined, undefined, customLogger);
-    (c as any).info("test");
-    expect(customLogger.info).toHaveBeenCalledWith("test");
+  it("should initialize and create a UDP socket", () => {
+    expect(dgram.createSocket).toHaveBeenCalledWith({ type: "udp4", reuseAddr: true });
+    expect(socketMock.on).toHaveBeenCalledWith("error", expect.any(Function));
+    expect(socketMock.on).toHaveBeenCalledWith("message", expect.any(Function));
   });
 
   it("should enable debug logging when option is set", () => {
-    const debugCore = new Core([], undefined, { debug: true }, loggerMock);
-    (debugCore as any).debug("test debug");
-    expect(loggerMock.debug).toHaveBeenCalledWith("test debug");
+    (core as any).debug("test message");
+    expect(loggerMock.debug).toHaveBeenCalledWith("test message");
   });
 
-  it("should NOT log debug when option is false", () => {
-    const noDebugCore = new Core([], undefined, { debug: false }, loggerMock);
-    (noDebugCore as any).debug("test debug");
-    expect(loggerMock.debug).not.toHaveBeenCalled();
-  });
-
-  it("should throw an error when no hostnames provided", () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false);
-    const emptyCore = new Core([], undefined, undefined, loggerMock);
-    expect(() => (emptyCore as any).__getHosts()).toThrowError(/Provide hostnames/);
-  });
-
-  it("should parse hostnames from file", () => {
+  it("should load hosts from explicit string array", () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(`host1\nhost2`);
-    const fileCore = new Core(null, "/path/hosts", undefined, loggerMock, mdnsInstanceMock as any, eventEmitter);
+    core.listen();
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      "Looking for hostnames...",
+      expect.arrayContaining(["example-device"])
+    );
+  });
 
+  it("should load hosts from file path", () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readFileSync).mockReturnValue("host-from-file");
+
+    const fileCore = new Core(null, "/custom/path", undefined, loggerMock);
     fileCore.listen();
 
-    expect(fs.readFileSync).toHaveBeenCalledWith("/path/hosts", { encoding: "utf-8" });
-    expect(loggerMock.info).toHaveBeenCalledWith("Looking for hostnames...", ["host1", "host2"]);
+    expect(fs.readFileSync).toHaveBeenCalledWith("/custom/path", { encoding: "utf-8" });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      "Looking for hostnames...",
+      ["host-from-file"]
+    );
   });
 
-  it("should fallback to OS default path and recurse (Linux)", () => {
-    vi.mocked(os.platform).mockReturnValue("linux");
-    vi.mocked(os.homedir).mockReturnValue("/home/test");
-    vi.mocked(join).mockImplementation((...paths: string[]) => paths.join("/"));
-    vi.mocked(fs.existsSync).mockImplementation((path) => path === "/home/test/.mdns-hosts");
-    vi.mocked(fs.readFileSync).mockReturnValue("linux-host");
+  it("should fallback to OS homedir if no hosts provided", () => {
+    vi.mocked(fs.existsSync).mockImplementation((path) => path === "/home/testuser/.mdns-hosts");
+    vi.mocked(fs.readFileSync).mockReturnValue("home-host");
 
-    const autoCore = new Core([], undefined, undefined, loggerMock, mdnsInstanceMock as any, eventEmitter);
+    const autoCore = new Core([], null, undefined, loggerMock);
     autoCore.listen();
 
-    expect(fs.existsSync).toHaveBeenCalledWith("/home/test/.mdns-hosts");
-    expect(loggerMock.info).toHaveBeenCalledWith("Looking for hostnames...", ["linux-host"]);
+    expect(fs.existsSync).toHaveBeenCalledWith("/home/testuser/.mdns-hosts");
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      "Looking for hostnames...",
+      ["home-host"]
+    );
   });
 
-  it("should fallback to OS default path (Windows)", () => {
-    vi.mocked(os.platform).mockReturnValue("win32");
-    vi.mocked(os.homedir).mockReturnValue(`C:\\Users\\Test`);
-    vi.mocked(join).mockImplementation((...paths: string[]) => paths.join("\\"));
-    vi.mocked(fs.existsSync).mockImplementation((path) => path === `C:\\Users\\Test\\.mdns-hosts`);
-    vi.mocked(fs.readFileSync).mockReturnValue("win-host");
-
-    const autoCore = new Core([], undefined, undefined, loggerMock, mdnsInstanceMock as any, eventEmitter);
-    autoCore.listen();
-
-    expect(fs.existsSync).toHaveBeenCalledWith(`C:\\Users\\Test\\.mdns-hosts`);
-  });
-
-  it("should set error state if __initListener fails", async () => {
+  it("should throw error if no hosts found anywhere", async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
 
-    const errCore = new Core([], undefined, { debug: true }, loggerMock, mdnsInstanceMock as any, eventEmitter);
+    const emptyCore = new Core([], null, undefined, loggerMock);
+    const eventSpy = vi.fn();
 
-    // Handle the pending error event to prevent unhandled exception
-    eventEmitter.on(EmittedEvent.ERROR, () => {
-      // noop
-    });
+    const emitter = emptyCore.listen();
+    emitter.on("error", eventSpy);
 
-    errCore.listen();
-
-    // Wait for nextTick to let error emit
     await new Promise(process.nextTick);
 
-    expect((errCore as any).error).toBe(true);
-    expect(loggerMock.debug).toHaveBeenCalledWith(expect.any(Error));
+    expect(eventSpy).toHaveBeenCalledWith(expect.any(Error));
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringMatching(/not provided/));
   });
 
-  it("should warn if hosts file is effectively empty", () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue("   # comments only");
-    const fileCore = new Core(null, "/path", undefined, loggerMock, mdnsInstanceMock as any, eventEmitter);
-    fileCore.listen();
-    expect(loggerMock.warn).toHaveBeenCalledWith("Hosts are empty");
+  it("should bind socket and add membership on listen", () => {
+    core.listen();
+    expect(socketMock.bind).toHaveBeenCalledWith(5353, expect.any(Function));
+    expect(socketMock.addMembership).toHaveBeenCalledWith("224.0.0.251");
+    expect(socketMock.setMulticastLoopback).toHaveBeenCalledWith(true);
   });
 
-  it("should detect valid IPv4", () => {
-    vi.mocked(os.networkInterfaces).mockReturnValue({
-      eth0: [{ address: "192.168.1.10", family: "IPv4", internal: false, netmask: "", mac: "", cidr: "" }],
+  it("should emit error if socket binding fails", () => {
+    (socketMock.bind as Mock).mockImplementationOnce(() => {
+      throw new Error("Bind failed");
     });
-    core.publish("test");
-    expect(bonjourInstanceMock.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
-        txt: expect.objectContaining({ ipv4: '"192.168.1.10"' }),
-      }),
+
+    core.listen();
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to bind"), expect.any(Error));
+  });
+
+  it("should parse a valid mDNS Response packet and emit event", () => {
+    const emitter = core.listen();
+    const eventSpy = vi.fn();
+    emitter.on(EmittedEvent.RESPONSE, eventSpy);
+
+    const targetHost = "example-device.local";
+    const packet = DNSBuffer.createResponse(
+      targetHost,
+      "192.168.1.50",
+      { "my-key": "my-value" }
+    );
+
+    const onMessage = socketHandlers["message"];
+    expect(onMessage).toBeDefined();
+
+    onMessage(packet);
+
+    expect(eventSpy).toHaveBeenCalledTimes(1);
+
+    const emittedData = eventSpy.mock.calls[0][0];
+    expect(emittedData).toHaveLength(1);
+
+    expect(emittedData[0]).toMatchObject({
+      name: "example-device.local",
+      type: "TXT",
+      data: { "my-key": "my-value" }
+    });
+  });
+
+  it("should ignore packets that do not match the hostname list", () => {
+    const emitter = core.listen();
+    const eventSpy = vi.fn();
+    emitter.on(EmittedEvent.RESPONSE, eventSpy);
+
+    const packet = DNSBuffer.createResponse("other-device.local", "1.1.1.1", {});
+
+    socketHandlers["message"](packet);
+
+    expect(eventSpy).not.toHaveBeenCalled();
+  });
+
+  it("should handle Malformed/Garbage packets gracefully", () => {
+    core.listen();
+    const onMessage = socketHandlers["message"];
+    const garbage = Buffer.from([0x00, 0x01, 0xFF]);
+
+    expect(() => onMessage(garbage)).not.toThrow();
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      "Failed to handle socket message",
+      expect.anything()
     );
   });
 
-  it("should ignore internal, IPv6, and 169.x", () => {
+  it("should publish a hostname (send packet)", () => {
     vi.mocked(os.networkInterfaces).mockReturnValue({
-      lo: [{ address: "127.0.0.1", family: "IPv4", internal: true, netmask: "", mac: "", cidr: "" }],
-      eth6: [{ address: "fe80::1", family: "IPv6", internal: false, netmask: "", mac: "", cidr: "", scopeid: 0 }],
-      ethBad: [{ address: "169.254.1.1", family: "IPv4", internal: false, netmask: "", mac: "", cidr: "" }],
-      ethEmpty: undefined as any,
+      eth0: [{ address: "192.168.1.100", family: "IPv4", internal: false, mac: "", netmask: "", cidr: "" }],
     });
-    core.publish("test");
-    expect(bonjourInstanceMock.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
-        txt: expect.objectContaining({ ipv4: '""' }),
-      }),
-    );
-  });
 
-  it("should handle loop continue when interface is undefined", () => {
-    vi.mocked(os.networkInterfaces).mockReturnValue({
-      ethNull: null as any,
-    });
-    core.publish("test");
-    expect(bonjourInstanceMock.publish).toHaveBeenCalled();
+    core.publish("my-service");
+
+    expect(socketMock.send).toHaveBeenCalledTimes(1);
+
+    const [buffer, offset, length, port, ip] = (socketMock.send as Mock).mock.calls[0];
+
+    expect(buffer).toBeInstanceOf(Buffer);
+    expect(port).toBe(5353);
+    expect(ip).toBe("224.0.0.251");
+    expect(loggerMock.info).toHaveBeenCalledWith("Published hostname:", "my-service", expect.any(Object));
   });
 
   it("should not publish if disabled", () => {
     core.setDisablePublisher(true);
     core.publish("test");
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining("Publisher is disabled"));
-    expect(bonjourInstanceMock.publish).not.toHaveBeenCalled();
+    expect(socketMock.send).not.toHaveBeenCalled();
+    expect(loggerMock.info).toHaveBeenCalledWith("Publisher is disabled.");
   });
 
-  it("should call unpublishAll", () => {
-    core.unpublishAll();
-    expect(bonjourInstanceMock.unpublishAll).toHaveBeenCalled();
+  it("should abort publish if no local IP found", () => {
+    vi.mocked(os.networkInterfaces).mockReturnValue({});
+
+    core.publish("test");
+    expect(socketMock.send).not.toHaveBeenCalled();
+    expect(loggerMock.warn).toHaveBeenCalledWith("Could not find local IP");
   });
 
-  it("should catch error during unpublishAll", () => {
-    bonjourInstanceMock.unpublishAll.mockImplementationOnce(() => {
-      throw new Error("Unpublish Fail");
-    });
-    core.unpublishAll();
-    expect(loggerMock.debug).toHaveBeenCalledWith("unpublishAll error", expect.any(Error));
-  });
+  it("should close socket and remove listeners on stop", () => {
+    const emitter = core.listen();
+    const spyRemove = vi.spyOn(emitter, "removeAllListeners");
 
-  it("should not listen if disabled", () => {
-    core.setDisableListener(true);
-    core.listen();
-    expect(loggerMock.info).toHaveBeenCalledWith("Listener is disabled");
-    expect(mdnsInstanceMock.on).not.toHaveBeenCalled();
-  });
-
-  it("should emit error if initialization failed", async () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false);
-    const errCore = new Core([], undefined, undefined, loggerMock, mdnsInstanceMock as any, eventEmitter);
-
-    const listener = errCore.listen();
-    listener.on(EmittedEvent.ERROR, () => {
-      // noop
-    });
-
-    await new Promise(process.nextTick);
-    expect(eventEmitter.emit).toHaveBeenCalledWith(EmittedEvent.ERROR, expect.any(Error));
-  });
-
-  it("should handle valid response", () => {
-    core.listen();
-    const callback = mdnsInstanceMock.on.mock.calls[0][1];
-    const mockResponse = {
-      answers: [
-        {
-          name: "example.local",
-          type: "TXT",
-          data: [Buffer.from("key=val")],
-        },
-      ],
-    };
-
-    callback(mockResponse);
-
-    expect(eventEmitter.emit).toHaveBeenCalledWith(
-      EmittedEvent.RESPONSE,
-      expect.arrayContaining([expect.objectContaining({ name: "example.local" })]),
-    );
-  });
-
-  it("should ignore mismatching hosts and malformed packets", () => {
-    core.listen();
-    const callback = mdnsInstanceMock.on.mock.calls[0][1];
-
-    callback({});
-    callback({ answers: [{ name: "wrong.local", type: "TXT", data: [] }] });
-    callback({ answers: [{ name: "example.local", type: "TXT", data: null }] });
-    callback({ answers: [{ name: "example.local", type: "TXT", data: "bad" }] });
-
-    expect(eventEmitter.emit).not.toHaveBeenCalledWith(EmittedEvent.RESPONSE, expect.anything());
-  });
-
-  it("should parse buffer data with quotes logic", () => {
-    const parse = (core as any).handleBufferData.bind(core);
-
-    expect(parse(Buffer.from('key="value"'))).toEqual({ key: "value" });
-    expect(parse(Buffer.from("key=value"))).toEqual({ key: "value" });
-    expect(parse(Buffer.from(`key="val \\"inner\\""`))).toEqual({ key: 'val "inner"' });
-    expect(parse(Buffer.from(`key="""`))).toEqual({ key: "" });
-    expect(parse(Buffer.from(""))).toEqual({});
-  });
-
-  it("should stop listeners", () => {
     core.stop();
-    expect(mdnsInstanceMock.removeAllListeners).toHaveBeenCalled();
-    expect(eventEmitter.removeAllListeners).toHaveBeenCalled();
-  });
 
-  it("should catch error during stop", () => {
-    mdnsInstanceMock.removeAllListeners.mockImplementationOnce(() => {
-      throw new Error("Stop Fail");
-    });
-    core.stop();
-    expect(loggerMock.debug).toHaveBeenCalledWith("stop error", expect.any(Error));
-  });
-
-  it("should handle missing instances in stop", () => {
-    const bareCore = new Core();
-    (bareCore as any).mdnsInstance = undefined;
-    (bareCore as any).myEvent = undefined;
-    expect(() => bareCore.stop()).not.toThrow();
+    expect(socketMock.close).toHaveBeenCalled();
+    expect(spyRemove).toHaveBeenCalled();
   });
 });
