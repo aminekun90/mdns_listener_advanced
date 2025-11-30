@@ -165,7 +165,7 @@ export class Core {
       const key = match[1];
       // if group 3 exists it's the inner quoted capture
       let value = match[3] ?? match[2];
-      value = value.replaceAll(/\\"/g, '"');
+      value = value.replaceAll(String.raw`\"`, '"');
       // strip surrounding quotes if still present
       if (value.startsWith('"') && value.endsWith('"')) {
         value = value.slice(1, -1);
