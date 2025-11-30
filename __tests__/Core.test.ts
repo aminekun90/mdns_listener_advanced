@@ -4,6 +4,7 @@ import { EmittedEvent } from "@/types.js";
 import * as dgram from "node:dgram";
 import * as fs from "node:fs";
 import * as os from "node:os";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 // --- Mocks ---
@@ -127,14 +128,14 @@ describe("Core", () => {
     );
   });
 
-  it("should fallback to OS homedir if no hosts provided", () => {
-    vi.mocked(fs.existsSync).mockImplementation((path) => path === "/home/testuser/.mdns-hosts");
+  it("should fallback to OS homedir if no hosts provided", async () => {
+    const expectedPath = path.join("/home/testuser", ".mdns-hosts");
+    vi.mocked(fs.existsSync).mockImplementation((p) => p === expectedPath);
     vi.mocked(fs.readFileSync).mockReturnValue("home-host");
-
     const autoCore = new Core([], null, undefined, loggerMock);
-    autoCore.listen();
-
-    expect(fs.existsSync).toHaveBeenCalledWith("/home/testuser/.mdns-hosts");
+    const emitter = autoCore.listen();
+    emitter.on("error", () => { });
+    expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
     expect(loggerMock.info).toHaveBeenCalledWith(
       "Looking for hostnames...",
       ["home-host"]
