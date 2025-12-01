@@ -53,20 +53,58 @@ export class DNSBuffer {
         const len = this.readUInt16();
 
         let data: any = null;
+        const endOffset = this.offset + len;
 
-        if (type === 16) { // TXT
-            // Return raw buffer array wrapper to match legacy structure expectation
-            data = [this.buffer.subarray(this.offset, this.offset + len)];
-        } else if (type === 1) { // A (IPv4)
+        if (type === 1) { // A (IPv4)
             data = this.buffer.subarray(this.offset, this.offset + len).join('.');
+            this.offset += len;
+        }
+        else if (type === 16) { // TXT
+            data = [this.buffer.subarray(this.offset, this.offset + len)];
+            this.offset += len;
+        }
+        else if (type === 12) { // PTR (Pointer to another name)
+            // The data is just another domain name
+            data = this.readName();
+        }
+        else if (type === 33) { // SRV (Service Location)
+            const priority = this.readUInt16();
+            const weight = this.readUInt16();
+            const port = this.readUInt16();
+            const target = this.readName();
+            data = { priority, weight, port, target };
+        }
+        else {
+            // Unknown type, skip it safely
+            this.offset += len;
         }
 
-        this.offset += len;
+        // Safety sync
+        this.offset = endOffset;
         return { name, type, class: cls, ttl, data };
     }
 
     get isDone() { return this.offset >= this.buffer.length; }
 
+
+    static createQuery(qname: string, qtype: number = 12): Buffer {
+
+        const header = Buffer.alloc(12);
+        header.writeUInt16BE(0, 0);      // ID (0)
+        header.writeUInt16BE(0, 2);      // Flags (0 = Query)
+        header.writeUInt16BE(1, 4);      // QDCOUNT (1 Question)
+        header.writeUInt16BE(0, 6);      // ANCOUNT
+        header.writeUInt16BE(0, 8);      // NSCOUNT
+        header.writeUInt16BE(0, 10);     // ARCOUNT
+        const qFooter = Buffer.alloc(4);
+        qFooter.writeUInt16BE(qtype, 0); // Type (PTR=12, A=1, ANY=255)
+        qFooter.writeUInt16BE(1, 2);     // Class IN
+        return Buffer.concat([
+            header,
+            this.encodeName(qname),
+            qFooter
+        ]);
+    }
     // --- Writers ---
 
     static createResponse(name: string, ip: string, txtData: { [key: string]: string }): Buffer {

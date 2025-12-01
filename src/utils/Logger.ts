@@ -1,4 +1,3 @@
-
 export class SimpleLogger {
     private readonly name: string;
     private readonly useColor: boolean;
@@ -8,14 +7,21 @@ export class SimpleLogger {
     private static readonly RED = "\x1b[31m";
     private static readonly GREEN = "\x1b[32m";
     private static readonly YELLOW = "\x1b[33m";
-    private static readonly BLUE = "\x1b[34m";
     private static readonly MAGENTA = "\x1b[35m";
-    private static readonly CYAN = "\x1b[36m";
 
-    constructor(options: { name: string }) {
+    constructor(options: { name: string, noColor?: boolean }) {
         this.name = options.name;
-        // Only enable colors if we are in a Terminal (TTY) and not explicitly disabled
-        this.useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+
+        // Logic:
+        // 1. If options.noColor is true, force disable.
+        // 2. Otherwise, check if we are in a TTY (terminal).
+        // This removes process.env.NO_COLOR entirely.
+        if (options.noColor) {
+            this.useColor = false;
+        } else {
+            // Safe Node.js check for "Are we in a terminal?"
+            this.useColor = !!process.stdout.isTTY;
+        }
     }
 
     private colorize(color: string, text: string): string {
