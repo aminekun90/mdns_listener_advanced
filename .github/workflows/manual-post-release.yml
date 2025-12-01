@@ -91,17 +91,22 @@ jobs:
                   retention-days: 7
 
             # -----------------------------
-            #  Publish to GitHub Packages (Fixed)
+            #  Publish to GitHub Packages (FIXED)
             # -----------------------------
             - name: Publish to GitHub Packages
               env:
-                  NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+                  # Use GITHUB_TOKEN instead of manual secret (It's automatic & safer)
+                  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  # 1. Temporarily rename to scoped package to satisfy GitHub Registry requirements
+                  # 1. Rename to scoped package (Required by GitHub Registry)
                   npm pkg set name="@aminekun90/mdns-listener-advanced"
 
-                  # 2. Append auth token to the active npm configuration
-                  echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> "$NPM_CONFIG_USERCONFIG"
+                  # 2. Configure npm to use the GitHub Registry for the @aminekun90 scope
+                  npm config set @aminekun90:registry=https://npm.pkg.github.com/
 
-                  # 3. Publish to GitHub Registry
-                  npm publish --registry=https://npm.pkg.github.com/
+                  # 3. Authenticate cleanly using the config command
+                  # (This automatically writes to the correct config file npm is using)
+                  npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
+
+                  # 4. Publish
+                  npm publish
