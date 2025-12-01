@@ -1,200 +1,177 @@
 # mDNS Listener Advanced
 
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/aminekun90/mdns_listener_advanced/graphs/commit-activity) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases)
-[![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions)
-[![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE)
-![node-current](https://img.shields.io/node/v/mdns-listener-advanced)
-[![Socket Badge](https://socket.dev/api/badge/npm/package/mdns-listener-advanced)](https://socket.dev/npm/package/mdns-listener-advanced)
-[![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/mdns-listener-advanced)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/aminekun90/mdns_listener_advanced/graphs/commit-activity) [![version number](https://img.shields.io/npm/v/mdns-listener-advanced?color=green&label=version)](https://github.com/aminekun90/mdns_listener_advanced/releases) [![Actions Status](https://github.com/aminekun90/mdns_listener_advanced/workflows/Test/badge.svg)](https://github.com/aminekun90/mdns_listener_advanced/actions) [![License](https://img.shields.io/github/license/aminekun90/mdns_listener_advanced)](https://github.com/aminekun90/mdns_listener_advanced/blob/master/LICENSE) ![node-current](https://img.shields.io/node/v/mdns-listener-advanced)[![Socket Badge](https://socket.dev/api/badge/npm/package/mdns-listener-advanced)](https://socket.dev/npm/package/mdns-listener-advanced) [![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/mdns-listener-advanced)
 
-**:warning: Major update** Since version 3.0.0 this package is using a Typescript Implementation and it is fully tested on Mac OS Tahoe 26.1 and windows 11 and ubuntu 20.04
-If you have any issue feel free to [open an issue here](https://github.com/aminekun90/mdns_listener_advanced/issues)
+> **🚀 Major Update v3.4.0+**: This package has been re-architected to be **Zero-Dependency**. It now uses native Node.js modules (`dgram`, `crypto`) for maximum performance, security, and compatibility. No more heavy dependencies like `bonjour-service` or `multicast-dns`.
 
-Advanced mDNS Listener to add and listen .local hostnames in your network compatible with zeroconf, bonjour, avahi
+**mDNS Listener Advanced** is a robust, cross-platform Node.js library for Multicast DNS (mDNS) operations. It allows you to:
 
-I recommand using this python publisher <https://github.com/aminekun90/python_zeroconf_publisher> since this code is fully compatible with it, if you dont have access to it you can contact me further bellow :wink: I can make you an offer.
+1. **Listen** for specific `.local` hostnames.
+2. **Publish** your own device/service to the network.
+3. **Scan/Discover** all devices and services on the network (Service Discovery).
 
-- **Note that `mdns-listener-advanced` includes a bonjour publisher since `version 3.1.0`**
+Compatible with mdns, Avahi, Bonjour, and Zeroconf.
 
 ## Requirements
 
-- Node 22 or later (we recommend using [NVM](https://github.com/nvm-sh/nvm)) this package is using Node v22 as of today.
+- **Node.js:** v22 or later (Recommended).
+- **OS:** Fully tested on Windows 11, Ubuntu 20.04+, and macOS (Sonoma/Sequoia/Tahoe).
+- Not tested on Docker containers.
 
 ## Installation
 
-`npm install mdns-listener-advanced`
+```bash
+npm install mdns-listener-advanced
+# or prefered way
+yarn add mdns-listener-advanced
+```
 
-## Usage
+## Features
 
-![JS](https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E)
+- 📦 Zero Dependencies: Lightweight and secure.
+- 🔍 Targeted Listening: Detect specific devices by name (e.g., MyDevice.local).
+- 📡 Service Discovery: Scan the network for all services (e.g., Google Cast, Printers).
+- 📢 Native Publisher: Announce your presence without external tools.
+- 🛡️ TypeScript: Written in TypeScript with full type definitions included.
 
-Fully tested on windows 11, ubuntu 18 and Mac OS Tahoe 26.1.
+## Usage Examples
+
+### 1. Basic Listener (JavaScript)
+
+Listen for specific devices defined in your constructor or hosts file.
 
 ```javascript
-// Usage since v3.3.4 in javascript
 import Core, { EmittedEvent } from "mdns-listener-advanced";
 
-const ref = "MyDevice2";
-const mdns = new Core([ref], null, {
-  debug: false,
-  disableListener: false,
-  disablePublisher: false,
+// Look for a device named "MyDevice2"
+const mdns = new Core(["MyDevice2"], null, {
+  debug: false
 });
 
 const event = mdns.listen();
-mdns.publish(ref);
-// Basic response of 'MyDevice2'
+
+// 1. Handle targeted response
 event.on(EmittedEvent.RESPONSE, (found_hostnames) => {
-  mdns.info("found hostnames", found_hostnames);
-  // mdns.stop();// To stop the listener
+  console.log("✅ Found Target:", found_hostnames);
+  // mdns.stop(); // Stop listening if needed
 });
-// Array of objects of different types
-event.on(EmittedEvent.RAW_RESPONSE, (hosts) => {
-  mdns.info("raw response", hosts);
-});
-//Error occured
+
+// 2. Handle errors
 event.on(EmittedEvent.ERROR, (error) => {
-  mdns.info("error", error);
-  // mdns.stop();// To stop the listener
+  console.error("❌ Error:", error);
 });
-
 ```
 
-### :white_check_mark: Fully tested
+### 2. Service Discovery / Scanning (TypeScript)
 
-![ts](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+New in v3.4.0: actively query the network to find devices (Printers, Chromecast, HomeKit, etc).
 
 ```typescript
-import { Core, Device, EmittedEvent  } from 'mdns-listener-advanced';
+import { Core, EmittedEvent, Device } from 'mdns-listener-advanced';
 
-const ref = 'MyDevice2';
-const mdns = new Core([ref], null, {
-  debug: false,
-  disableListener: false,
-  disablePublisher:false,
-});
-
+const mdns = new Core();
 const event = mdns.listen();
-mdns.publish(ref);
-// Basic response of 'MyDevice2'
-event.on(EmittedEvent.RESPONSE, (found_hostnames: Array<Device>) => {
-  mdns.info('found hostnames', found_hostnames);
-  // mdns.stop();// To stop the listener
-});
-// Array of objects of different types
-event.on(EmittedEvent.RAW_RESPONSE, (hosts: Array<object>) => {
-  mdns.info('raw response', hosts);
-});
-//Error occured
-event.on(EmittedEvent.ERROR, (error: Error) => {
-  mdns.info('error', error);
-  // mdns.stop();// To stop the listener
+
+event.on(EmittedEvent.DISCOVERY, (device: Device) => {
+  console.log(`🔎 Discovered [${device.type}]:`, device.name, device.data);
 });
 
+// Scan for Google Cast devices
+mdns.scan("_googlecast._tcp.local");
+
+// OR Scan for EVERYTHING
+// mdns.scan("_services._dns-sd._udp.local");
 ```
 
-- To Stop listening to the event use :
+### 3. Publishing a Host
 
-```typescript
-mdns.stop();
-```
-
-### EmittedEvent Enum since v3.2.6
-
-```typescript
-import { EmittedEvent } from 'mdns-listener-advanced';
-```
-
-| Name                        | Descripti                               |
-| --------------------------- | --------------------------------------- |
-| `EmittedEvent.RESPONSE`     | Emits when an mdns device is discovered |
-| `EmittedEvent.RAW_RESPONSE` | Emits raw data of the mdns response     |
-| `EmittedEvent.ERROR`        | Emits on any errors                     |
-
-## Configuration
-
-### Method 1
-
-Provide hostnames list in the constructor like this :
+Announce your service to the network.
 
 ```javascript
-var mdnsListenerAdvanced = require("mdns-listener-advanced");
-const mdns = new mdnsListenerAdvanced.Core(['MyDevice1','MyDevice2']);
+import { Core } from "mdns-listener-advanced";
+
+const mdns = new Core();
+
+// Publish "MyCoolService.local"
+mdns.publish("MyCoolService");
+
+// Your device is now visible to other mDNS scanners!
 ```
 
-The file .mdns-hosts is created automatically.
+## API Documentation
 
-#### Method 2
+Class: `Core`
 
-Add and Edit the file named .mdns-hosts, this file must be in your HOME directory for windows ``[HDD]:\Users\<username>\.mdns-hosts`` and for linux/Mac ``~/.mdns-hosts``, place hostnames ending on separate lines like so:
-
-```shell
-myhost1
-myhost2
-```
-
-You can specify the hostnames that you want to detect !
-
-Whenever you change this file, you should restart the service.
-
-### Publish and Unpublish a hostname
-
-To publish a hostname you can use this example :
+### Constructor
 
 ```typescript
-import { Core } from "mdns-listener-advanced";
-const ref = "MyDevice2";
-const mdns = new Core();
-mdns.publish(ref);
-mdns.unpublishAll();// You can unpublish using this function
+new Core(hostsList?, mdnsHostsPath?, options?, logger?)
 ```
 
-Output:
+| Parameter     | Type     | Description                                                                               |
+| ------------- | -------- | ----------------------------------------------------------------------------------------- |
+| hostsList     | string[] | Optional array of hostnames to listen for (e.g. ['device1']).                             |
+| mdnsHostsPath | string   | Optional absolute path to a custom hosts file.                                            |
+| options       | Options  | "Config object: { debug: boolean, disableListener: boolean, disablePublisher: boolean }." |
+| logger        | any      | "Custom logger instance (must have .info, .debug, .warn, .error)."                        |
 
-```bash
-ℹ️ MDNS ADVANCED A hostname have been published with options {
-  port: 3000,
-  name: 'MyDevice2',
-  type: 'TXT',
-  txt: {
-    id: '"510f56fb-cb61-45d6-8e01-be4ed49405bb"',
-    ipv4: '"192.168.2.11"'
-  }
-}
+### Methods
+
+| Method            | Description                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| listen()          | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter.           |
+| publish(name)     | "Broadcasts an mDNS response, announcing name.local with your IP address."               |
+| scan(serviceType) | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local. |
+| stop()            | Closes the socket and removes all event listeners.                                       |
+
+### Events (EmittedEvent)
+
+| Event Name         | Enum                      | Payload Type | Description                                                    |
+| ------------------ | ------------------------- | ------------ | -------------------------------------------------------------- |
+| """response"""     | EmittedEvent.RESPONSE     | Device[]     | Fired when a Targeted Host (from your list) is found.          |
+| """discovery"""    | EmittedEvent.DISCOVERY    | Device       | "Fired when scan() finds ANY device (PTR, SRV, or A records)." |
+| """raw_response""" | EmittedEvent.RAW_RESPONSE | object       | The full raw packet structure (advanced debugging).            |
+| """error"""        | EmittedEvent.ERROR        | Error        | Fired on socket errors or configuration issues.                |
+
+---
+
+### Configuration Files
+
+You can optionally use a file to manage the list of devices you want to detect (Targeted Listening).
+
+Location:
+
+- Windows: `C:\Users\<username>\.mdns-hosts`
+- Linux/macOS: `~/.mdns-hosts`
+
+```plaintext
+LivingRoomTV
+OfficePrinter
+RaspberryPi
 ```
 
-Note that a warning will appear if you initialise the Core of `mdns-listener-advanced` without providing a hostname list or `~/.mdns-hosts` file path.
+If you do not provide a constructor list or this file, the listener will warn you but still function (useful if you only want to use scan() or publish())
 
-```bash
-⚠️ MDNS ADVANCED Hostnames or path to hostnames is not provided, listening to a host is compromised!
-```
+---
 
-- At the moment you cannot unpublish services undividually or by hostname and there might be a way using the included bonjour library.
+### Troubleshooting
 
-### Details
+- Firewall: mDNS uses UDP port 5353. Ensure your firewall allows traffic on this port.
+- Docker: If running in Docker, you must use network_mode: "host" so the container can receive Multicast packets from the physical network.
+- Windows: You might need to allow Node.js through the Windows Defender Firewall on the first run.
+- MacOS + Docker limitations : running docker in host mode might not work on MacOS, since the container is not able to access the host network.
 
-| Functions                                       | Params        | Type                         | Description                                        |
-| ----------------------------------------------- | ------------- | ---------------------------- | -------------------------------------------------- |
-| `new mdnsListenerAdvanced.Core(['MyDevice2']);` | hostsList     | `Array<string>`              | List of hostnames                                  |
-| `new advanced_mdns(..,mdnsHostsPath)`           | mdnsHostsPath | `string`                     | Full path of your .mdns-hosts  (not available)     |
-| `new advanced_mdns(..,..,options)`              | options       | `{debug:boolean}`            | Enable debug default value is `false`              |
-| `new advanced_mdns(..,..,options)`              | options       | `{disableListener:boolean}`  | Disable listener the default value is `false`      |
-| `new advanced_mdns(..,..,options)`              | options       | `{disablePublisher:boolean}` | Disable publisher the default value is `false`     |
-| `.listen().on(event,callback(object))`          | event         | `string`                     | To catch a response event when set to `"response"` |
-|                                                 | callback      | `function(object)`           | callback to do custome code                        |
-|                                                 | object        | `object`                     | a received object i.e `{MyDevice1:{...}}`          |
-| `.stop()`                                       |               |                              | to stop the event listener                         |
-| `.publish(hostname)`                            | hostname      | `string`                     | to publish an mdns host protocol                   |
-| `.unpublishAll()`                               |               |                              | to unpublish all mdns host protocol                |
+## Support & Contribution
 
-## Buy me a coffee keep the project alive
+Issues: [Open an issue here](https://github.com/aminekun90/mdns_listener_advanced/issues)
+Contact: [Connect on linkedin](https://www.linkedin.com/in/amine-bouzahar/)
+
+### Buy me a coffee :coffee:
+
+If this library saved you time, consider supporting the project!
 
 [![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/aminebouzahar)
 
-## Want to contribute or have any suggestions or questions?
+---
 
-Contact me on [Linkedin Here](https://www.linkedin.com/in/amine-bouzahar/).
-
-## Other notes
-
-Note: The original idea was from @Richie765 <https://github.com/Richie765/mdns-listener> and got updated and enhanced, few parts of the original code might still exist.
+Original Credit: Based on concepts from @Richie765, now fully rewritten for modern Node.js and TypeScript.

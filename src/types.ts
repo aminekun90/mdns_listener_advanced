@@ -2,6 +2,7 @@ export interface Options {
   debug?: boolean | null;
   disableListener?: boolean;
   disablePublisher?: boolean;
+  noColor?: boolean;
 }
 
 export type Device = {
@@ -9,7 +10,13 @@ export type Device = {
   type: string;
   data: DeviceData | { [key: string]: string };
 };
-export type DeviceBuffer = { name: string; type: number; class: number; ttl: number; data: any; };
+export type DeviceBuffer = {
+  name: string;
+  type: number;
+  class: number;
+  ttl: number;
+  data: Buffer[] | string;
+};
 export type DeviceData = {
   uuid: string;
   ipv4: string;
@@ -22,4 +29,5 @@ export enum EmittedEvent {
   RESPONSE = "response",
   RAW_RESPONSE = "rawResponse",
   ERROR = "error",
+  DISCOVERY = "discovery"
 }

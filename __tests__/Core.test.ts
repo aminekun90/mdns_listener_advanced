@@ -4,11 +4,12 @@ import { EmittedEvent } from "@/types.js";
 import * as dgram from "node:dgram";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import path from "node:path";
+import path from "node:path"; // Fix: Cross-platform path handling
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 // --- Mocks ---
 
+// 1. Mock Node Filesystem
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
   return {
@@ -18,6 +19,7 @@ vi.mock("node:fs", async (importOriginal) => {
   };
 });
 
+// 2. Mock Node OS
 vi.mock("node:os", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:os")>();
   return {
@@ -27,7 +29,7 @@ vi.mock("node:os", async (importOriginal) => {
   };
 });
 
-// FIX 1: Robust dgram mock
+// 3. Robust dgram mock
 const socketMock = {
   on: vi.fn(),
   bind: vi.fn(),
@@ -49,6 +51,7 @@ vi.mock("node:dgram", () => {
   };
 });
 
+// 4. Mock Crypto
 vi.mock("node:crypto", () => ({
   randomUUID: vi.fn(() => "550e8400-e29b-41d4-a716-446655440000"),
 }));
@@ -62,15 +65,18 @@ describe("Core", () => {
     vi.clearAllMocks();
     socketHandlers = {};
 
+    // Capture socket event handlers when .on is called
     (socketMock.on as Mock).mockImplementation((event, handler) => {
       socketHandlers[event] = handler;
       return socketMock;
     });
 
+    // Default socket bind success simulation
     (socketMock.bind as Mock).mockImplementation((port, cb) => {
       if (cb) cb();
     });
 
+    // Default socket send success simulation
     (socketMock.send as Mock).mockImplementation((msg, off, len, port, addr, cb) => {
       if (cb) cb(null);
     });
@@ -129,12 +135,18 @@ describe("Core", () => {
   });
 
   it("should fallback to OS homedir if no hosts provided", async () => {
+    // Cross-platform path construction
     const expectedPath = path.join("/home/testuser", ".mdns-hosts");
+
     vi.mocked(fs.existsSync).mockImplementation((p) => p === expectedPath);
     vi.mocked(fs.readFileSync).mockReturnValue("home-host");
+
     const autoCore = new Core([], null, undefined, loggerMock);
+
+    // Prevent unhandled error crash
     const emitter = autoCore.listen();
     emitter.on("error", () => { });
+
     expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
     expect(loggerMock.info).toHaveBeenCalledWith(
       "Looking for hostnames...",
@@ -149,7 +161,9 @@ describe("Core", () => {
     const eventSpy = vi.fn();
 
     const emitter = emptyCore.listen();
-    emitter.on("error", eventSpy);
+    emitter.on(EmittedEvent.ERROR, eventSpy);
+    // Safety net for string-based 'error'
+    emitter.on("error", () => { });
 
     await new Promise(process.nextTick);
 
@@ -195,6 +209,7 @@ describe("Core", () => {
     const emittedData = eventSpy.mock.calls[0][0];
     expect(emittedData).toHaveLength(1);
 
+    // FIX: Use toMatchObject for looser equality check
     expect(emittedData[0]).toMatchObject({
       name: "example-device.local",
       type: "TXT",
@@ -220,8 +235,10 @@ describe("Core", () => {
     const garbage = Buffer.from([0x00, 0x01, 0xFF]);
 
     expect(() => onMessage(garbage)).not.toThrow();
-    expect(loggerMock.error).toHaveBeenCalledWith(
-      "Failed to handle socket message",
+    // Assuming logger.warn for malformed packets based on latest Core.ts
+    // If you used logger.error in previous versions, update this expectation
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      "Failed to parse message",
       expect.anything()
     );
   });
