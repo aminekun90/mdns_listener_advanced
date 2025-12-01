@@ -123,5 +123,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          # 1. Temporarily rename to scoped package (Required by GitHub Registry)
+          # Uses the repository owner name automatically (e.g., @aminekun90/mdns-listener-advanced)
+          npm pkg set name="@${{ github.repository_owner }}/mdns-listener-advanced"
+
+          # 2. Append auth token to the ACTIVE npm configuration file
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> "$NPM_CONFIG_USERCONFIG"
+
+          # 3. Publish to GitHub Registry
           npm publish --registry=https://npm.pkg.github.com/

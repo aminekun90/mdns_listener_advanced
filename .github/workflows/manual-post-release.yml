@@ -1,0 +1,107 @@
+name: Manual Post-Release Sync
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: write
+    packages: write
+    issues: write
+    id-token: write
+
+jobs:
+    # JOB 1: Ensure GitHub Release Exists
+    ensure-release:
+        name: Sync GitHub Release
+        runs-on: ubuntu-latest
+        outputs:
+            target_tag: ${{ steps.get_version.outputs.TAG_NAME }}
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22.x"
+
+            - name: Get Version from package.json
+              id: get_version
+              run: |
+                  # Extract version directly from package.json
+                  VERSION=$(node -p "require('./package.json').version")
+                  TAG_NAME="v$VERSION"
+                  echo "Detected version: $TAG_NAME"
+                  echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+
+            - name: Create GitHub Release (If Missing)
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAG: ${{ steps.get_version.outputs.TAG_NAME }}
+              run: |
+                  # Check if release exists
+                  if gh release view "$TAG" >/dev/null 2>&1; then
+                    echo "Release $TAG already exists. Skipping creation."
+                  else
+                    echo "Creating release for $TAG..."
+                    gh release create "$TAG" --title "$TAG" --generate-notes --target ${{ github.sha }}
+                  fi
+
+    # JOB 2: Audit & Publish to GitHub Packages ONLY
+    audit-and-gh-package:
+        name: Audit & GH Package
+        needs: ensure-release
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.ensure-release.outputs.target_tag }}
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22.x"
+                  cache: "yarn"
+                  registry-url: "https://registry.npmjs.org"
+
+            - name: Install & Build
+              run: |
+                  yarn install --frozen-lockfile
+                  yarn build
+
+            # -----------------------------
+            #  Run Shai-Hulud Security Audit
+            # -----------------------------
+            - name: Run Shai-Hulud Audit
+              shell: bash
+              run: |
+                  chmod +x ./shai-hulud-audit.sh
+                  ./shai-hulud-audit.sh --no-color --save-report || true
+
+            - name: Upload Audit Logs
+              uses: actions/upload-artifact@v4
+              with:
+                  name: shai-hulud-audit-${{ github.run_number }}
+                  path: "*.log"
+                  retention-days: 7
+
+            # -----------------------------
+            #  Publish to GitHub Packages (Fixed)
+            # -----------------------------
+            - name: Publish to GitHub Packages
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+              run: |
+                  # 1. Temporarily rename to scoped package to satisfy GitHub Registry requirements
+                  npm pkg set name="@aminekun90/mdns-listener-advanced"
+
+                  # 2. Append auth token to the active npm configuration
+                  echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> "$NPM_CONFIG_USERCONFIG"
+
+                  # 3. Publish to GitHub Registry
+                  npm publish --registry=https://npm.pkg.github.com/
