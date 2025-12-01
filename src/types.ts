@@ -3,18 +3,13 @@ export interface Options {
   disableListener?: boolean;
   disablePublisher?: boolean;
 }
-export const NPM_URL = "https://www.npmjs.com/package/mdns-listener-advanced";
 
 export type Device = {
   name: string;
   type: string;
   data: DeviceData | { [key: string]: string };
 };
-export type DeviceBuffer = {
-  name: string;
-  type: string;
-  data: Buffer;
-};
+export type DeviceBuffer = { name: string; type: number; class: number; ttl: number; data: any; };
 export type DeviceData = {
   uuid: string;
   ipv4: string;
