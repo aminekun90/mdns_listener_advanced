@@ -62,6 +62,7 @@ jobs:
           else
             gh release create "$TAG" --title "$TAG" --generate-notes --target ${{ github.sha }}
             echo "release_created=true" >> $GITHUB_OUTPUT
+          fi
 
   # JOB 2: Security Audit + Publish
   publish-npm:
