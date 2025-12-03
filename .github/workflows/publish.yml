@@ -112,9 +112,8 @@ jobs:
       #  Publish to public NPM
       # -----------------------------
       - name: Publish to NPM
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        # No secret needed as we use npm publish with provenance Authentication happens automatically via OIDC
+        run: npm publish --provenance --access public
 
       # -----------------------------
       #  Publish to GitHub Packages
