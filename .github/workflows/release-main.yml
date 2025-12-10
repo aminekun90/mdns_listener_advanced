@@ -31,6 +31,10 @@ jobs:
           node-version: "22.x"
           cache: "yarn"
           registry-url: "https://registry.npmjs.org"
+      - name: ⬆️ Ensure Latest npm (>= 11.5.1)
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
 
       # 1. Determine Version
       # If input is empty, it grabs the version from package.json
