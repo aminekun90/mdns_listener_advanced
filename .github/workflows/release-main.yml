@@ -52,7 +52,11 @@ jobs:
           yarn build
       - name: 🔍 Verify Version Not Already Published
         run: npm view mdns-listener-advanced@${{ steps.package.outputs.version }} || echo "✅ Version not published yet"
-
+      - name: 🔍 Prove Auth Mode
+        run: |
+          echo "NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN"
+          cat ~/.npmrc || true
+      
       # 3. Publish to NPM
       # --ignore-scripts: CRITICAL FIX. Prevents Husky from dirtying the git tree.
       # --provenance: Enables OIDC security.
