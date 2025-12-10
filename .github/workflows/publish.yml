@@ -71,7 +71,11 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.create-release.outputs.release_created == 'true'
     
-    # REMOVED environment block (Must match Empty setting on NPM)
+    # CRITICAL: This enables the "Environment Pattern"
+    # It changes the OIDC signature to match your NPM "npm-publish" setting
+    environment:
+      name: npm-publish
+      url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
     
     steps:
       - name: Checkout repository
