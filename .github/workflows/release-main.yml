@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 1.2.3). If not provided, uses package.json version.'
-        required: true
+        description: 'Version to publish (e.g., 3.4.8) - Leave empty to use package.json'
+        required: false
         type: string
 
 permissions:
@@ -16,7 +16,10 @@ jobs:
   release:
     name: 🚀 Build & Release
     runs-on: ubuntu-latest
-    environment: npm-publish
+    
+    # Matches your NPM settings "npm-publish"
+    environment:
+      name: npm-publish
 
     steps:
       - name: ⬇️ Checkout Repo
@@ -27,41 +30,41 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
+          # NO registry-url (OIDC handles auth)
 
-      # 1. Bump Version
-      - name: 🆔 Set Version
+      # 1. Determine Version
+      # If input is empty, it grabs the version from package.json
+      - name: 🆔 Get Package Info
         id: package
         run: |
-          npm version ${{ inputs.version }} --no-git-tag-version
-          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Target Version: $VERSION"
 
-      # 2. Build
+      # 2. Install & Build
       - name: 🛠️ Install & Build
         run: |
           yarn install --frozen-lockfile
           yarn build
 
-      # 3. Check for Dirty Git Status (Debugging)
-      - name: 🕵️ Check Git Status
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::warning::⚠️ Git tree is dirty! Attempting to ignore scripts to bypass."
-            git status
-          else
-            echo "✅ Git tree is clean."
-          fi
-
-      # 4. Publish to NPM
-      # --ignore-scripts: Stops Husky from dirtying the tree
-      # --provenance: Enables OIDC
+      # 3. Publish to NPM
+      # --ignore-scripts: CRITICAL FIX. Prevents Husky from dirtying the git tree.
+      # --provenance: Enables OIDC security.
       - name: 🚀 Publish to NPM
         run: npm publish --provenance --access public --ignore-scripts --registry https://registry.npmjs.org/
 
-      # 5. Create Release
+      # 4. Create GitHub Release
       - name: 🏷️ Create GitHub Release
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.package.outputs.version }}
         run: |
-          gh release create "v$VERSION" --title "v$VERSION" --generate-notes --target "main"
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --generate-notes \
+            --target "main"
