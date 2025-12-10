@@ -10,7 +10,7 @@ permissions:
   contents: write
   packages: write
   issues: write
-  id-token: write
+  id-token: write # REQUIRED for NPM OIDC
 
 jobs:
   # JOB 1: Create the Release and Tag
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          registry-url: "https://registry.npmjs.org"
+          # CRITICAL: NO registry-url here. It breaks OIDC authentication.
 
       - name: Determine Release Version
         id: get_tag
@@ -70,6 +70,8 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     if: needs.create-release.outputs.release_created == 'true'
+    
+    # Kept this to match your NPM settings
     environment:
       name: npm-publish
       url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
@@ -85,7 +87,11 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          registry-url: "https://registry.npmjs.org"
+          # CRITICAL: NO registry-url here.
+
+      - name: Force Public Registry
+        # Explicitly tells npm we are targeting the public registry
+        run: npm config set registry https://registry.npmjs.org/
 
       - name: Install & Build
         run: |
@@ -112,7 +118,7 @@ jobs:
       #  Publish to public NPM
       # -----------------------------
       - name: Publish to NPM
-        # No secret needed as we use npm publish with provenance Authentication happens automatically via OIDC
+        # OIDC will works now because setup-node isn't blocking it
         run: npm publish --provenance --access public
 
       # -----------------------------
@@ -125,4 +131,5 @@ jobs:
           npm pkg set name="@aminekun90/mdns-listener-advanced"
           npm config set @aminekun90:registry=https://npm.pkg.github.com/
           npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
-          npm publish
+          # Force the GitHub registry specifically for this command
+          npm publish --registry https://npm.pkg.github.com/

@@ -6,11 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aminekun90/mdns-listener-advanced.git"
+    "url": "git+https://github.com/aminekun90/mdns_listener_advanced.git"
   },
-  "homepage": "https://github.com/aminekun90/mdns-listener-advanced#readme",
+  "homepage": "https://github.com/aminekun90/mdns_listener_advanced#readme",
   "bugs": {
-    "url": "https://github.com/aminekun90/mdns-listener-advanced/issues"
+    "url": "https://github.com/aminekun90/mdns_listener_advanced/issues"
   },
   "funding": "https://github.com/sponsors/aminekun90",
   "type": "module",
