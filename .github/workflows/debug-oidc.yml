@@ -9,21 +9,16 @@ permissions:
 jobs:
   debug-claims:
     runs-on: ubuntu-latest
-    environment: npm-publish # We test with the environment to match your goal
+    environment: npm-publish # Matches your intended environment
     steps:
-      - name: Install OIDC Client
-        run: npm install -g @actions/core @actions/http-client
-
       - name: Debug OIDC Claims
         uses: actions/github-script@v7
         with:
           script: |
-            const core = require('@actions/core');
             try {
-              // Request the ID token
+              // 'core' is already available globally in this action
               const token = await core.getIDToken('npm');
               
-              // Decode it (it's just base64) to show the claims
               const payload = token.split('.')[1];
               const claims = JSON.parse(Buffer.from(payload, 'base64').toString());
               
