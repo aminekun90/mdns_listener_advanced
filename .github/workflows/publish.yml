@@ -70,9 +70,7 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     if: needs.create-release.outputs.release_created == 'true'
-    environment:
-      name: npm-publish
-      url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
+    # REMOVED environment block to prevent OIDC mismatch errors
 
     steps:
       - name: Checkout repository
@@ -85,7 +83,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # REMOVED registry-url: This fixes the "Access token expired" error.
+          # REMOVED registry-url to allow OIDC auth
 
       - name: Force Public Registry
         # Ensures we don't accidentally try to publish to GitHub Packages here
