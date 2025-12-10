@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # NO registry-url (OIDC handles auth)
+          registry-url: "https://registry.npmjs.org"
 
       # 1. Determine Version
       # If input is empty, it grabs the version from package.json
@@ -50,12 +50,14 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
+      - name: 🔍 Verify Version Not Already Published
+        run: npm view mdns-listener-advanced@${{ steps.package.outputs.version }} || echo "✅ Version not published yet"
 
       # 3. Publish to NPM
       # --ignore-scripts: CRITICAL FIX. Prevents Husky from dirtying the git tree.
       # --provenance: Enables OIDC security.
       - name: 🚀 Publish to NPM
-        run: npm publish --provenance --access public --ignore-scripts --registry https://registry.npmjs.org/
+        run: npm publish --provenance --access public --ignore-scripts
 
       # 4. Create GitHub Release
       - name: 🏷️ Create GitHub Release
