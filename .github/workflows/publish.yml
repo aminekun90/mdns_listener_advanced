@@ -17,13 +17,6 @@ jobs:
     name: 🚀 Build & Release
     runs-on: ubuntu-latest
 
-    # ✅ THIS IS WHAT YOU WANTED:
-    # We explicitly use the 'npm-publish' environment.
-    # This makes the OIDC token match your NPM settings perfectly.
-    environment:
-      name: npm-publish
-      url: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.package.outputs.version }}
-
     steps:
       - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
