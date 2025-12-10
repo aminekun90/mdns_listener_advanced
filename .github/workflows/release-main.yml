@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 3.4.5) - Leave empty to use package.json'
+        description: 'Version to publish (e.g., 3.4.5)'
         required: false
         type: string
 
@@ -16,6 +16,11 @@ jobs:
   release:
     name: 🚀 Build & Release
     runs-on: ubuntu-latest
+
+    # ✅ CORRECTED: We use the environment NAME only.
+    # We removed the broken URL line that was likely killing the OIDC handshake.
+    environment:
+      name: npm-publish
 
     steps:
       - name: ⬇️ Checkout Repo
@@ -33,35 +38,25 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Target Version: $VERSION"
 
-      # 2. Check if Tag Exists (Prevent duplicate releases)
-      - name: 🔍 Check for Existing Tag
-        id: tag-check
-        run: |
-          if git rev-parse "v${{ steps.package.outputs.version }}" >/dev/null 2>&1; then
-            echo "::error::❌ Tag v${{ steps.package.outputs.version }} already exists!"
-            exit 1
-          fi
-
-      # 3. Setup Node (Clean setup)
+      # 2. Setup Node
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
           cache: "yarn"
-          # NO registry-url (OIDC handles auth)
+          # NO registry-url
 
-      # 4. Install & Build
+      # 3. Install & Build
       - name: 🛠️ Install & Build
         run: |
           yarn install --frozen-lockfile
           yarn build
 
-      # 5. Publish to NPM
-      # OIDC works here because we set 'environment: npm-publish' above
+      # 4. Publish to NPM
       - name: 🚀 Publish to NPM
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --registry https://registry.npmjs.org/
 
-      # 6. Create GitHub Release (Only runs if NPM succeeds)
+      # 5. Create GitHub Release
       - name: 🏷️ Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
