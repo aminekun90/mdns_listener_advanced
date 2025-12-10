@@ -20,6 +20,7 @@ export class Core {
   private hostnames: string[];
   private mdnsHostsFile?: string;
   private readonly debugEnabled: boolean;
+  private publishTimer?: NodeJS.Timeout;
   private disableListener: boolean;
   private disablePublisher: boolean;
   private error = false;
@@ -50,22 +51,24 @@ export class Core {
     this.disableListener = !!options?.disableListener;
     this.disablePublisher = !!options?.disablePublisher;
 
-    this.logger = logger ?? new SimpleLogger({
-      name: "MDNS ADVANCED",
-      noColor: !!options?.noColor
-    });
+    this.logger =
+      logger ??
+      new SimpleLogger({
+        name: "MDNS ADVANCED",
+        noColor: !!options?.noColor,
+      });
     this.myEvent = new EventEmitter();
 
     // Bind to UDP4 with reuseAddr to allow multiple applications to use port 5353
-    this.socket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+    this.socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
 
-    this.socket.on('error', (err) => {
+    this.socket.on("error", (err) => {
       this.logger.error("Socket Error", err);
       this.error = true;
       this.isListening = false; // Reset state on error
     });
 
-    this.socket.on('message', (msg) => this.handleSocketMessage(msg));
+    this.socket.on("message", (msg) => this.handleSocketMessage(msg));
   }
 
   /**
@@ -132,14 +135,16 @@ export class Core {
       return this.hostnames.join("\n");
     }
 
-    const defaultFile = join(homedir(), '.mdns-hosts');
+    const defaultFile = join(homedir(), ".mdns-hosts");
 
     if (existsSync(defaultFile)) {
       this.mdnsHostsFile = defaultFile;
       return readFileSync(defaultFile, { encoding: "utf-8" });
     }
 
-    this.logger.warn("Hostnames or path to hostnames is not provided, listening to a host is compromised!");
+    this.logger.warn(
+      "Hostnames or path to hostnames is not provided, listening to a host is compromised!",
+    );
     throw new Error(`Provide hostnames or path to hostnames! Report this error ${NPM_URL}`);
   }
 
@@ -166,29 +171,58 @@ export class Core {
    * This effectively "publishes" a service or device to the network.
    * * @param name - The hostname/service name to publish (e.g. "MyDevice").
    */
-  public publish(name: string) {
+  /**
+   * Broadcasts an mDNS Response packet.
+   * Now supports periodic announcements (Heartbeat).
+   * * @param name - The hostname/service name to publish.
+   * @param interval - (Optional) Time in ms to repeat the broadcast (e.g., 30000). 0 = once.
+   */
+  public publish(name: string, interval: number = 30000): void {
     if (this.disablePublisher) {
       this.logger.info("Publisher is disabled.");
       return;
     }
 
-    const ip = this.getLocalIpAddress();
-    if (!ip) {
-      this.logger.warn("Could not find local IP");
-      return;
-    }
+    // Generate a consistent UUID for this session
+    const uuid = `"${randomUUID()}"`;
 
-    const txtData = {
-      uuid: `"${randomUUID()}"`,
-      ipv4: JSON.stringify(ip),
+    // Define the sending logic
+    const sendAnnouncement = () => {
+      const ip = this.getLocalIpAddress();
+      if (!ip) {
+        this.logger.warn("Could not find local IP during publish");
+        return;
+      }
+
+      const txtData = {
+        uuid: uuid,
+        ipv4: JSON.stringify(ip),
+      };
+
+      const packet = DNSBuffer.createResponse(name, ip, txtData);
+
+      this.socket.send(packet, 0, packet.length, MDNS_PORT, MDNS_IP, (err) => {
+        if (err) this.logger.error("Failed to publish", err);
+        else this.logger.debug("Published hostname:", name); // Changed to debug to avoid spam
+      });
     };
 
-    const packet = DNSBuffer.createResponse(name, ip, txtData);
+    // 1. Send immediately
+    this.logger.info(`Starting publication for: ${name}`);
+    sendAnnouncement();
 
-    this.socket.send(packet, 0, packet.length, MDNS_PORT, MDNS_IP, (err) => {
-      if (err) this.logger.error("Failed to publish", err);
-      else this.logger.info("Published hostname:", name, txtData);
-    });
+    // 2. Clear any existing timer to prevent duplicates
+    if (this.publishTimer) {
+      clearInterval(this.publishTimer);
+      this.publishTimer = undefined;
+    }
+
+    // 3. Set up the interval if requested
+    if (interval > 0) {
+      this.publishTimer = setInterval(sendAnnouncement, interval);
+      // Ensure the process doesn't hang if this is the only active handle
+      this.publishTimer.unref();
+    }
   }
 
   /**
@@ -248,7 +282,6 @@ export class Core {
 
       // Assume listening start success to prevent race conditions with immediate .scan() calls
       this.isListening = true;
-
     } catch (e) {
       this.isListening = false; // Revert state on sync error
       const errorMessage = `Failed to bind socket! Report: ${NPM_URL}`;
@@ -267,23 +300,34 @@ export class Core {
     try {
       const parser = new DNSBuffer(msg);
 
-      // Parse Header (12 Bytes)
-      const id = parser.readUInt16();
-      const flags = parser.readUInt16();
+      // Parse Header SKIP ID AND FLAGS
+      /**
+       * ISSUE FIX:
+       * DNSBuffer moves a cursor sequentially through the raw bytes.
+       * By commenting out the id and flags reads, the cursor started at byte 0 instead of byte 4,
+       * causing qdCount to read the packet ID instead of the question count.
+       * Uncommenting those lines realigned the parser so it could correctly identify the Question, Answer, and Additional record counts.
+       */
+      parser.readUInt16(); // ID
+      parser.readUInt16(); // Flags
       const qdCount = parser.readUInt16(); // Questions
       const anCount = parser.readUInt16(); // Answers
-      parser.readUInt16(); // NS Count (Authority)
-      parser.readUInt16(); // AR Count (Additional)
+      const nsCount = parser.readUInt16(); // Authority (Capture this!)
+      const arCount = parser.readUInt16(); // Additional (Capture this!)
 
       // Skip Questions
       for (let i = 0; i < qdCount; i++) {
         parser.readName();
-        parser.readUInt16(); parser.readUInt16();
+        parser.readUInt16();
+        parser.readUInt16();
       }
 
-      // Read Answers
+      // Read Answers + Authority + Additional
+      // FIX: Sum all record counts to ensure we read TXT records in the Additional section
       const answers: DeviceBuffer[] = [];
-      for (let i = 0; i < anCount; i++) {
+      const totalRecords = anCount + nsCount + arCount;
+
+      for (let i = 0; i < totalRecords; i++) {
         if (parser.isDone) break;
         answers.push(parser.readAnswer());
       }
@@ -316,29 +360,47 @@ export class Core {
 
   /**
    * Checks if any of the incoming answers match the specific hostnames
-   * provided in the constructor (legacy mode).
+   * provided in the constructor.
    * * @param answers - Array of parsed DNS records.
    */
   private checkTargetedHosts(answers: Array<DeviceBuffer>): void {
-    const foundDevices: Array<Device> = [];
-
-    for (const hostname of this.hostnames) {
-      for (const a of answers) {
-        // We only care about TXT records that match our target hostname
-        if (a.type === 16 && a.name?.includes(hostname) && Array.isArray(a.data)) {
-          const combinedBuffer = Buffer.concat(a.data);
-          foundDevices.push({
-            name: a.name,
-            type: 'TXT',
-            data: parseTxtRecord(combinedBuffer),
-          });
-        }
-      }
-    }
+    const foundDevices = answers
+      .filter((a) => this.isMatchingTxtRecord(a))
+      .map((a) => this.convertToDevice(a))
+      .filter((d): d is Device => d !== null);
 
     if (foundDevices.length > 0) {
       this.myEvent.emit(EmittedEvent.RESPONSE, foundDevices);
     }
+  }
+
+  /**
+   * Helper: Determines if an answer is a TXT record (Type 16)
+   * and matches one of the monitored hostnames.
+   */
+  private isMatchingTxtRecord(answer: DeviceBuffer): boolean {
+    return answer.type === 16 && this.hostnames.some((hostname) => answer.name?.includes(hostname));
+  }
+
+  /**
+   * Helper: safe-guards buffer conversion and maps the answer to a Device object.
+   */
+  private convertToDevice(answer: DeviceBuffer): Device | null {
+    let txtBuffer: Buffer | null = null;
+
+    if (Buffer.isBuffer(answer.data)) {
+      txtBuffer = answer.data;
+    } else if (Array.isArray(answer.data)) {
+      txtBuffer = Buffer.concat(answer.data);
+    }
+
+    if (!txtBuffer) return null;
+
+    return {
+      name: answer.name,
+      type: "TXT",
+      data: parseTxtRecord(txtBuffer),
+    };
   }
 
   /**
@@ -350,13 +412,13 @@ export class Core {
     for (const a of answers) {
       switch (a.type) {
         case 12: // PTR (Pointer)
-          this.emitDiscovery(a, 'PTR');
+          this.emitDiscovery(a, "PTR");
           break;
         case 33: // SRV (Service)
-          this.emitDiscovery(a, 'SRV');
+          this.emitDiscovery(a, "SRV");
           break;
         case 1: // A (IPv4)
-          this.emitDiscovery(a, 'A');
+          this.emitDiscovery(a, "A");
           break;
       }
     }
@@ -367,11 +429,11 @@ export class Core {
    * * @param record - The parsed device buffer record.
    * @param type - The standardized type string.
    */
-  private emitDiscovery(record: DeviceBuffer, type: 'PTR' | 'SRV' | 'A'): void {
+  private emitDiscovery(record: DeviceBuffer, type: "PTR" | "SRV" | "A"): void {
     this.myEvent.emit(EmittedEvent.DISCOVERY, {
       name: record.name,
       type: type,
-      data: record.data
+      data: record.data,
     });
   }
 

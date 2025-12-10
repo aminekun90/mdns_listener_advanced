@@ -4,7 +4,7 @@ import { EmittedEvent } from "@/types.js";
 import * as dgram from "node:dgram";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import path from "node:path"; // Fix: Cross-platform path handling
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 // --- Mocks ---
@@ -59,7 +59,8 @@ vi.mock("node:crypto", () => ({
 describe("Core", () => {
   let core: Core;
   let loggerMock: any;
-  let socketHandlers: { [key: string]: Function } = {};
+  // Capture handlers to trigger them manually
+  let socketHandlers: { [key: string]: (msg: Buffer, rinfo?: any) => void } = {};
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -88,12 +89,7 @@ describe("Core", () => {
       error: vi.fn(),
     };
 
-    core = new Core(
-      ["example-device"],
-      undefined,
-      { debug: true },
-      loggerMock
-    );
+    core = new Core(["example-device"], undefined, { debug: true }, loggerMock);
   });
 
   afterEach(() => {
@@ -116,7 +112,7 @@ describe("Core", () => {
     core.listen();
     expect(loggerMock.info).toHaveBeenCalledWith(
       "Looking for hostnames...",
-      expect.arrayContaining(["example-device"])
+      expect.arrayContaining(["example-device"]),
     );
   });
 
@@ -128,14 +124,10 @@ describe("Core", () => {
     fileCore.listen();
 
     expect(fs.readFileSync).toHaveBeenCalledWith("/custom/path", { encoding: "utf-8" });
-    expect(loggerMock.info).toHaveBeenCalledWith(
-      "Looking for hostnames...",
-      ["host-from-file"]
-    );
+    expect(loggerMock.info).toHaveBeenCalledWith("Looking for hostnames...", ["host-from-file"]);
   });
 
   it("should fallback to OS homedir if no hosts provided", async () => {
-    // Cross-platform path construction
     const expectedPath = path.join("/home/testuser", ".mdns-hosts");
 
     vi.mocked(fs.existsSync).mockImplementation((p) => p === expectedPath);
@@ -145,13 +137,10 @@ describe("Core", () => {
 
     // Prevent unhandled error crash
     const emitter = autoCore.listen();
-    emitter.on("error", () => { });
+    emitter.on("error", () => {});
 
     expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
-    expect(loggerMock.info).toHaveBeenCalledWith(
-      "Looking for hostnames...",
-      ["home-host"]
-    );
+    expect(loggerMock.info).toHaveBeenCalledWith("Looking for hostnames...", ["home-host"]);
   });
 
   it("should throw error if no hosts found anywhere", async () => {
@@ -163,7 +152,7 @@ describe("Core", () => {
     const emitter = emptyCore.listen();
     emitter.on(EmittedEvent.ERROR, eventSpy);
     // Safety net for string-based 'error'
-    emitter.on("error", () => { });
+    emitter.on("error", () => {});
 
     await new Promise(process.nextTick);
 
@@ -184,7 +173,10 @@ describe("Core", () => {
     });
 
     core.listen();
-    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to bind"), expect.any(Error));
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to bind"),
+      expect.any(Error),
+    );
   });
 
   it("should parse a valid mDNS Response packet and emit event", () => {
@@ -193,11 +185,9 @@ describe("Core", () => {
     emitter.on(EmittedEvent.RESPONSE, eventSpy);
 
     const targetHost = "example-device.local";
-    const packet = DNSBuffer.createResponse(
-      targetHost,
-      "192.168.1.50",
-      { "my-key": "my-value" }
-    );
+    // NOTE: This packet places TXT records in the 'Additional' section.
+    // Core.ts must iterate over (anCount + nsCount + arCount) to find it.
+    const packet = DNSBuffer.createResponse(targetHost, "192.168.1.50", { "my-key": "my-value" });
 
     const onMessage = socketHandlers["message"];
     expect(onMessage).toBeDefined();
@@ -209,11 +199,10 @@ describe("Core", () => {
     const emittedData = eventSpy.mock.calls[0][0];
     expect(emittedData).toHaveLength(1);
 
-    // FIX: Use toMatchObject for looser equality check
     expect(emittedData[0]).toMatchObject({
       name: "example-device.local",
       type: "TXT",
-      data: { "my-key": "my-value" }
+      data: { "my-key": "my-value" },
     });
   });
 
@@ -232,20 +221,25 @@ describe("Core", () => {
   it("should handle Malformed/Garbage packets gracefully", () => {
     core.listen();
     const onMessage = socketHandlers["message"];
-    const garbage = Buffer.from([0x00, 0x01, 0xFF]);
+    const garbage = Buffer.from([0x00, 0x01, 0xff]);
 
     expect(() => onMessage(garbage)).not.toThrow();
     // Assuming logger.warn for malformed packets based on latest Core.ts
-    // If you used logger.error in previous versions, update this expectation
-    expect(loggerMock.warn).toHaveBeenCalledWith(
-      "Failed to parse message",
-      expect.anything()
-    );
+    expect(loggerMock.warn).toHaveBeenCalledWith("Failed to parse message", expect.anything());
   });
 
   it("should publish a hostname (send packet)", () => {
     vi.mocked(os.networkInterfaces).mockReturnValue({
-      eth0: [{ address: "192.168.1.100", family: "IPv4", internal: false, mac: "", netmask: "", cidr: "" }],
+      eth0: [
+        {
+          address: "192.168.1.100",
+          family: "IPv4",
+          internal: false,
+          mac: "",
+          netmask: "",
+          cidr: "",
+        },
+      ],
     });
 
     core.publish("my-service");
@@ -254,10 +248,12 @@ describe("Core", () => {
 
     const [buffer, offset, length, port, ip] = (socketMock.send as Mock).mock.calls[0];
 
+    expect(offset).toBe(0);
+    expect(length).toBe(125);
+
     expect(buffer).toBeInstanceOf(Buffer);
     expect(port).toBe(5353);
     expect(ip).toBe("224.0.0.251");
-    expect(loggerMock.info).toHaveBeenCalledWith("Published hostname:", "my-service", expect.any(Object));
   });
 
   it("should not publish if disabled", () => {
@@ -272,7 +268,7 @@ describe("Core", () => {
 
     core.publish("test");
     expect(socketMock.send).not.toHaveBeenCalled();
-    expect(loggerMock.warn).toHaveBeenCalledWith("Could not find local IP");
+    expect(loggerMock.warn).toHaveBeenCalledWith("Could not find local IP during publish");
   });
 
   it("should close socket and remove listeners on stop", () => {

@@ -22,7 +22,7 @@ Compatible with mdns, Avahi, Bonjour, and Zeroconf.
 
 ```bash
 npm install mdns-listener-advanced
-# or prefered way
+# or preferred way
 yarn add mdns-listener-advanced
 ```
 
@@ -64,7 +64,7 @@ event.on(EmittedEvent.ERROR, (error) => {
 
 ### 2. Service Discovery / Scanning (TypeScript)
 
-New in v3.4.0: actively query the network to find devices (Printers, Chromecast, HomeKit, etc).
+New in v3.4.0: actively query the network to find devices (Printers, Chromecast, HomeKit, etc.).
 
 ```typescript
 import { Core, EmittedEvent, Device } from 'mdns-listener-advanced';
@@ -93,7 +93,7 @@ import { Core } from "mdns-listener-advanced";
 const mdns = new Core();
 
 // Publish "MyCoolService.local"
-mdns.publish("MyCoolService");
+mdns.publish("MyCoolService", 30000); // 30000 ms = 30 seconds by default
 
 // Your device is now visible to other mDNS scanners!
 ```
@@ -109,7 +109,7 @@ new Core(hostsList?, mdnsHostsPath?, options?, logger?)
 ```
 
 | Parameter     | Type     | Description                                                                               |
-| ------------- | -------- | ----------------------------------------------------------------------------------------- |
+|---------------|----------|-------------------------------------------------------------------------------------------|
 | hostsList     | string[] | Optional array of hostnames to listen for (e.g. ['device1']).                             |
 | mdnsHostsPath | string   | Optional absolute path to a custom hosts file.                                            |
 | options       | Options  | "Config object: { debug: boolean, disableListener: boolean, disablePublisher: boolean }." |
@@ -117,17 +117,17 @@ new Core(hostsList?, mdnsHostsPath?, options?, logger?)
 
 ### Methods
 
-| Method            | Description                                                                              |
-| ----------------- | ---------------------------------------------------------------------------------------- |
-| listen()          | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter.           |
-| publish(name)     | "Broadcasts an mDNS response, announcing name.local with your IP address."               |
-| scan(serviceType) | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local. |
-| stop()            | Closes the socket and removes all event listeners.                                       |
+| Method                  | Description                                                                                                                    |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| listen()                | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter.                                                 |
+| publish(name, interval) | "Broadcasts an mDNS response, announcing name.local with your IP address. personalize the interval by default set to 30000ms." |
+| scan(serviceType)       | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local.                                       |
+| stop()                  | Closes the socket and removes all event listeners.                                                                             |
 
 ### Events (EmittedEvent)
 
 | Event Name         | Enum                      | Payload Type | Description                                                    |
-| ------------------ | ------------------------- | ------------ | -------------------------------------------------------------- |
+|--------------------|---------------------------|--------------|----------------------------------------------------------------|
 | """response"""     | EmittedEvent.RESPONSE     | Device[]     | Fired when a Targeted Host (from your list) is found.          |
 | """discovery"""    | EmittedEvent.DISCOVERY    | Device       | "Fired when scan() finds ANY device (PTR, SRV, or A records)." |
 | """raw_response""" | EmittedEvent.RAW_RESPONSE | object       | The full raw packet structure (advanced debugging).            |
@@ -159,12 +159,12 @@ If you do not provide a constructor list or this file, the listener will warn yo
 - Firewall: mDNS uses UDP port 5353. Ensure your firewall allows traffic on this port.
 - Docker: If running in Docker, you must use network_mode: "host" so the container can receive Multicast packets from the physical network.
 - Windows: You might need to allow Node.js through the Windows Defender Firewall on the first run.
-- MacOS + Docker limitations : running docker in host mode might not work on MacOS, since the container is not able to access the host network.
+- MacOS + Docker limitations : running docker in host mode might not work on Mac-OS, since the container is not able to access the host network.
 
 ## Support & Contribution
 
 Issues: [Open an issue here](https://github.com/aminekun90/mdns_listener_advanced/issues)
-Contact: [Connect on linkedin](https://www.linkedin.com/in/amine-bouzahar/)
+Contact: [Connect on LinkedIn](https://www.linkedin.com/in/amine-bouzahar/)
 
 ### Buy me a coffee :coffee:
 
