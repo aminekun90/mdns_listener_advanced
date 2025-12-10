@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # FIXED: NO registry-url defined here. This allows OIDC to work.
+          # NO registry-url (OIDC handles auth)
 
       - name: Determine Release Version
         id: get_tag
@@ -64,18 +64,15 @@ jobs:
             echo "release_created=true" >> $GITHUB_OUTPUT
           fi
 
-  # JOB 2: Security Audit + Publish
+  # JOB 2: Publish to NPM
   publish-npm:
     name: Audit & Publish
     needs: create-release
     runs-on: ubuntu-latest
     if: needs.create-release.outputs.release_created == 'true'
     
-    # Matches your NPM settings "npm-publish"
-    environment:
-      name: npm-publish
-      url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
-
+    # REMOVED environment block (Must match Empty setting on NPM)
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -87,10 +84,9 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # FIXED: NO registry-url.
+          # NO registry-url
 
       - name: Force Public Registry
-        # Explicitly tells npm we are targeting the public registry
         run: npm config set registry https://registry.npmjs.org/
 
       - name: Install & Build
@@ -99,7 +95,7 @@ jobs:
           yarn build
 
       # -----------------------------
-      #  Run Shai-Hulud Security Audit
+      #  Run Security Audit
       # -----------------------------
       - name: Run Shai-Hulud Audit
         shell: bash
@@ -115,8 +111,20 @@ jobs:
           retention-days: 7
 
       # -----------------------------
-      #  Publish to public NPM
+      #  Publish to Public NPM
       # -----------------------------
       - name: Publish to NPM
-        # OIDC will now succeed because the Repo Name matches (underscores)
-        run: npm publish --provenance --access public
+        # Provenance enabled, Access public, Force registry
+        run: npm publish --provenance --access public --registry https://registry.npmjs.org/
+
+      # -----------------------------
+      #  Publish to GitHub Packages
+      # -----------------------------
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm pkg set name="@aminekun90/mdns-listener-advanced"
+          npm config set @aminekun90:registry=https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
+          npm publish --registry https://npm.pkg.github.com/
