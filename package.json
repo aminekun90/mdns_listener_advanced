@@ -39,7 +39,6 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "prepare": "husky",
     "release": "yarn clean && yarn build && yarn test"
   },
   "dependencies": {},
