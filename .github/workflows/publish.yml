@@ -10,7 +10,7 @@ permissions:
   contents: write
   packages: write
   issues: write
-  id-token: write
+  id-token: write # REQUIRED for NPM OIDC
 
 jobs:
   # JOB 1: Create the Release and Tag
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          registry-url: "https://registry.npmjs.org"
+          # REMOVED registry-url to prevent auth token errors
 
       - name: Determine Release Version
         id: get_tag
@@ -85,8 +85,11 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # REMOVED: registry-url: "https://registry.npmjs.org" 
-          # Removing this prevents setup-node from creating a broken .npmrc that expects a secret token.
+          # REMOVED registry-url: This fixes the "Access token expired" error.
+
+      - name: Force Public Registry
+        # Ensures we don't accidentally try to publish to GitHub Packages here
+        run: npm config set registry https://registry.npmjs.org/
 
       - name: Install & Build
         run: |
@@ -113,8 +116,8 @@ jobs:
       #  Publish to public NPM
       # -----------------------------
       - name: Publish to NPM
-        # No secret needed as we use npm publish with provenance Authentication happens automatically via OIDC
-        run: npm publish --provenance --access public
+        # Explicitly sets registry to ensure OIDC works with the public registry
+        run: npm publish --provenance --access public --registry https://registry.npmjs.org/
 
       # -----------------------------
       #  Publish to GitHub Packages
@@ -123,7 +126,8 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # We manually configure the registry for THIS step only
           npm pkg set name="@aminekun90/mdns-listener-advanced"
           npm config set @aminekun90:registry=https://npm.pkg.github.com/
           npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
-          npm publish
+          npm publish --registry https://npm.pkg.github.com/

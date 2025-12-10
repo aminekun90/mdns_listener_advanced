@@ -105,7 +105,8 @@ Class: `Core`
 ### Constructor
 
 ```typescript
-new Core(hostsList?, mdnsHostsPath?, options?, logger?)
+// All args are optional
+new Core(hostsList, mdnsHostsPath, options, logger)
 ```
 
 | Parameter     | Type     | Description                                                                               |
