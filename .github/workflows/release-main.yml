@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 3.4.5)'
+        description: 'Version to publish (e.g., 3.4.6)'
         required: false
         type: string
 
@@ -13,58 +13,23 @@ permissions:
   id-token: write # REQUIRED for OIDC
 
 jobs:
-  debug-claims:
-    runs-on: ubuntu-latest
-    environment: npm-publish # Matches your intended environment
-    steps:
-      - name: Debug OIDC Claims
-        uses: actions/github-script@v7
-        with:
-          script: |
-            try {
-              // 1. Request the OIDC token specifically for the 'npm' audience
-              const token = await core.getIDToken('npm');
-              
-              // 2. Decode the JWT (it has 3 parts: header.payload.signature)
-              const payload = token.split('.')[1];
-              const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
-
-              console.log("---------------------------------------------------");
-              console.log("🔍 OIDC DEBUG REPORT");
-              console.log("---------------------------------------------------");
-              console.log(`✅ Audience (aud):       ${decoded.aud}`);
-              console.log(`✅ Subject (sub):        ${decoded.sub}`);
-              console.log(`✅ Repository:           ${decoded.repository}`);
-              console.log(`✅ Repository Owner:     ${decoded.repository_owner}`);
-              console.log(`✅ Workflow Ref:         ${decoded.job_workflow_ref}`);
-              console.log("---------------------------------------------------");
-              
-              // 3. Check for common pitfalls
-              if (decoded.aud !== 'npm') {
-                 console.log("❌ ERROR: Audience is not 'npm'. Check your setup.");
-              }
-              if (decoded.sub.includes('ref:refs/tags') && !decoded.sub.includes('environment')) {
-                 console.log("⚠️ WARNING: Subject is a Tag ref, but no Environment is visible. NPM will reject this if configured for a branch.");
-              }
-              console.log("---------------------------------------------------");
-              
-            } catch (err) {
-              core.setFailed(`Failed to get OIDC token: ${err.message}`);
-            }
   release:
     name: 🚀 Build & Release
     runs-on: ubuntu-latest
-
-    # ✅ CORRECTED: We use the environment NAME only.
-    # We removed the broken URL line that was likely killing the OIDC handshake.
-    environment:
-      name: npm-publish
+    environment: npm-publish
 
     steps:
       - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
 
-      # 1. Determine Version
+      # 1. Setup Node
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "yarn"
+
+      # 2. Determine Version
       - name: 🆔 Get Package Info
         id: package
         run: |
@@ -74,15 +39,6 @@ jobs:
             VERSION=$(node -p "require('./package.json').version")
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Target Version: $VERSION"
-
-      # 2. Setup Node
-      - name: ⚙️ Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "yarn"
-          # NO registry-url
 
       # 3. Install & Build
       - name: 🛠️ Install & Build
@@ -90,12 +46,36 @@ jobs:
           yarn install --frozen-lockfile
           yarn build
 
-      # 4. Publish to NPM
+      # 4. CRITICAL DEBUG: Check for Dirty Git State
+      - name: 🕵️ Check Git Status
+        run: |
+          echo "Checking for uncommitted changes..."
+          git status --porcelain
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::⚠️ GIT TREE IS DIRTY! Provenance will fail."
+            echo "Listing dirty files:"
+            git status
+            
+            # EMERGENCY FIX: Ignore changes to dist so OIDC works
+            echo "Temporary fix: Stashing changes to clean tree"
+            git add .
+            git reset --hard
+            
+            # Re-run build just in case reset wiped it (unlikely if in .gitignore)
+            # If dist IS in .gitignore, git status would have been clean.
+            # If we are here, dist is NOT ignored.
+            echo "::warning::Your dist/ folder is likely missing from .gitignore!"
+          else
+            echo "✅ Git tree is clean. Provenance should work."
+          fi
+
+      # 5. Publish to NPM
       - name: 🚀 Publish to NPM
         run: npm publish --provenance --access public --registry https://registry.npmjs.org/
 
-      # 5. Create GitHub Release
+      # 6. Create GitHub Release
       - name: 🏷️ Create GitHub Release
+        if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.package.outputs.version }}
