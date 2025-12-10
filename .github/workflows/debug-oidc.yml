@@ -16,19 +16,32 @@ jobs:
         with:
           script: |
             try {
-              // 'core' is already available globally in this action
+              // 1. Request the OIDC token specifically for the 'npm' audience
               const token = await core.getIDToken('npm');
               
+              // 2. Decode the JWT (it has 3 parts: header.payload.signature)
               const payload = token.split('.')[1];
-              const claims = JSON.parse(Buffer.from(payload, 'base64').toString());
+              const decoded = JSON.parse(Buffer.from(payload, 'base64').toString());
+
+              console.log("---------------------------------------------------");
+              console.log("🔍 OIDC DEBUG REPORT");
+              console.log("---------------------------------------------------");
+              console.log(`✅ Audience (aud):       ${decoded.aud}`);
+              console.log(`✅ Subject (sub):        ${decoded.sub}`);
+              console.log(`✅ Repository:           ${decoded.repository}`);
+              console.log(`✅ Repository Owner:     ${decoded.repository_owner}`);
+              console.log(`✅ Workflow Ref:         ${decoded.job_workflow_ref}`);
+              console.log("---------------------------------------------------");
               
+              // 3. Check for common pitfalls
+              if (decoded.aud !== 'npm') {
+                 console.log("❌ ERROR: Audience is not 'npm'. Check your setup.");
+              }
+              if (decoded.sub.includes('ref:refs/tags') && !decoded.sub.includes('environment')) {
+                 console.log("⚠️ WARNING: Subject is a Tag ref, but no Environment is visible. NPM will reject this if configured for a branch.");
+              }
               console.log("---------------------------------------------------");
-              console.log("✅ YOUR EXACT OIDC SUBJECT IS:");
-              console.log(claims.sub);
-              console.log("---------------------------------------------------");
-              console.log("ℹ️  Repository Claim: " + claims.repository);
-              console.log("ℹ️  Workflow Claim:   " + claims.job_workflow_ref);
-              console.log("---------------------------------------------------");
+              
             } catch (err) {
-              core.setFailed(err.message);
+              core.setFailed(`Failed to get OIDC token: ${err.message}`);
             }
