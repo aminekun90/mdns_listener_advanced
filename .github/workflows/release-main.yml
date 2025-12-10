@@ -10,14 +10,16 @@ on:
 
 permissions:
   contents: write
+  packages: write
+  issues: write
   id-token: write # REQUIRED for OIDC
 
 jobs:
   release:
-    name: 🚀 Build & Release
+    name: 🚀 Build, Audit & Release
     runs-on: ubuntu-latest
     
-    # Matches your NPM settings "npm-publish"
+    # Matches your NPM settings "npm-publish" for OIDC
     environment:
       name: npm-publish
 
@@ -31,13 +33,13 @@ jobs:
           node-version: "22.x"
           cache: "yarn"
           registry-url: "https://registry.npmjs.org"
-      - name: ⬆️ Ensure Latest npm (>= 11.5.1)
+
+      - name: ⬆️ Ensure Latest npm (>= 11.5.1) # CRITICAL Required for OIDC
         run: |
           npm install -g npm@^11.5.1
           npm --version
 
       # 1. Determine Version
-      # If input is empty, it grabs the version from package.json
       - name: 🆔 Get Package Info
         id: package
         run: |
@@ -54,20 +56,28 @@ jobs:
         run: |
           yarn install --frozen-lockfile
           yarn build
-      - name: 🔍 Verify Version Not Already Published
-        run: npm view mdns-listener-advanced@${{ steps.package.outputs.version }} || echo "✅ Version not published yet"
-      - name: 🔍 Prove Auth Mode
+
+      # 3. Security Audit (Shai-Hulud)
+      - name: 🛡️ Run Shai-Hulud Audit
+        shell: bash
         run: |
-          echo "NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN"
-          cat ~/.npmrc || true
-      
-      # 3. Publish to NPM
-      # --ignore-scripts: CRITICAL FIX. Prevents Husky from dirtying the git tree.
-      # --provenance: Enables OIDC security.
+          chmod +x ./shai-hulud-audit.sh
+          ./shai-hulud-audit.sh --no-color --save-report || true
+
+      - name: 📤 Upload Audit Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: shai-hulud-audit-${{ github.run_number }}
+          path: "*.log"
+          retention-days: 7
+
+      # 4. Publish to Public NPM
+      # --ignore-scripts: Prevents Husky from dirtying the git tree
+      # --provenance: Enables OIDC security
       - name: 🚀 Publish to NPM
         run: npm publish --provenance --access public --ignore-scripts
 
-      # 4. Create GitHub Release
+      # 5. Create GitHub Release
       - name: 🏷️ Create GitHub Release
         if: success()
         env:
@@ -78,3 +88,14 @@ jobs:
             --title "v$VERSION" \
             --generate-notes \
             --target "main"
+
+      # 6. Publish to GitHub Packages
+      - name: 📦 Publish to GitHub Packages
+        if: success()
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm pkg set name="@aminekun90/mdns-listener-advanced"
+          npm config set @aminekun90:registry=https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
+          npm publish --registry https://npm.pkg.github.com/
