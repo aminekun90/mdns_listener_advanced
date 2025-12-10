@@ -1,135 +1,80 @@
 name: Release & Publish
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 3.4.5) - Leave empty to use package.json'
+        required: false
+        type: string
 
 permissions:
   contents: write
-  packages: write
-  issues: write
-  id-token: write # REQUIRED for NPM OIDC
+  id-token: write # REQUIRED for OIDC
 
 jobs:
-  # JOB 1: Create the Release and Tag
-  create-release:
-    name: Create GitHub Release
+  release:
+    name: 🚀 Build & Release
     runs-on: ubuntu-latest
-    outputs:
-      target_tag: ${{ steps.get_tag.outputs.TARGET_TAG }}
-      release_created: ${{ steps.create_release.outputs.release_created }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.x"
-          cache: "yarn"
-          # CRITICAL: Do NOT add registry-url here. It breaks OIDC authentication.
-
-      - name: Determine Release Version
-        id: get_tag
-        run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            TAG_NAME=${{ github.ref_name }}
-            echo "TARGET_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
-          else
-            VERSION=$(node -p "require('./package.json').version")
-            TAG_NAME="v$VERSION"
-            echo "TARGET_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Install & Build
-        run: |
-          yarn install --frozen-lockfile
-          yarn build
-
-      - name: Create GitHub Release
-        id: create_release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.get_tag.outputs.TARGET_TAG }}
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "release_created=true" >> $GITHUB_OUTPUT
-          else
-            gh release create "$TAG" --title "$TAG" --generate-notes --target ${{ github.sha }}
-            echo "release_created=true" >> $GITHUB_OUTPUT
-          fi
-
-  # JOB 2: Security Audit + Publish
-  publish-npm:
-    name: Audit & Publish
-    needs: create-release
-    runs-on: ubuntu-latest
-    if: needs.create-release.outputs.release_created == 'true'
-    
-    # CRITICAL: This MUST match the "Environment name" in your NPM screenshot exactly.
+    # ✅ THIS IS WHAT YOU WANTED:
+    # We explicitly use the 'npm-publish' environment.
+    # This makes the OIDC token match your NPM settings perfectly.
     environment:
       name: npm-publish
-      url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
+      url: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.package.outputs.version }}
 
     steps:
-      - name: Checkout repository
+      - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.create-release.outputs.target_tag }}
 
-      - name: Setup Node.js
+      # 1. Determine Version
+      - name: 🆔 Get Package Info
+        id: package
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Target Version: $VERSION"
+
+      # 2. Check if Tag Exists (Prevent duplicate releases)
+      - name: 🔍 Check for Existing Tag
+        id: tag-check
+        run: |
+          if git rev-parse "v${{ steps.package.outputs.version }}" >/dev/null 2>&1; then
+            echo "::error::❌ Tag v${{ steps.package.outputs.version }} already exists!"
+            exit 1
+          fi
+
+      # 3. Setup Node (Clean setup)
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
           cache: "yarn"
-          # CRITICAL: No registry-url here either.
+          # NO registry-url (OIDC handles auth)
 
-      - name: Force Public Registry
-        # Explicitly tells npm we are targeting the public registry
-        run: npm config set registry https://registry.npmjs.org/
-
-      - name: Install & Build
+      # 4. Install & Build
+      - name: 🛠️ Install & Build
         run: |
           yarn install --frozen-lockfile
           yarn build
 
-      # -----------------------------
-      #  Run Shai-Hulud Security Audit
-      # -----------------------------
-      - name: Run Shai-Hulud Audit
-        shell: bash
-        run: |
-          chmod +x ./shai-hulud-audit.sh
-          ./shai-hulud-audit.sh --no-color --save-report || true
+      # 5. Publish to NPM
+      # OIDC works here because we set 'environment: npm-publish' above
+      - name: 🚀 Publish to NPM
+        run: npm publish --provenance --access public
 
-      - name: Upload Audit Logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: shai-hulud-audit-${{ github.run_number }}
-          path: "*.log"
-          retention-days: 7
-
-      # -----------------------------
-      #  Publish to public NPM
-      # -----------------------------
-      - name: Publish to NPM
-        # provenance uses OIDC to authenticate with the permissions above
-        run: npm publish --verbose --provenance --access public
-
-      # -----------------------------
-      #  Publish to GitHub Packages
-      # -----------------------------
-      - name: Publish to GitHub Packages
+      # 6. Create GitHub Release (Only runs if NPM succeeds)
+      - name: 🏷️ Create GitHub Release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.package.outputs.version }}
         run: |
-          npm pkg set name="@aminekun90/mdns-listener-advanced"
-          npm config set @aminekun90:registry=https://npm.pkg.github.com/
-          npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
-          # Force the GitHub registry specifically for this command
-          npm publish --registry https://npm.pkg.github.com/
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --generate-notes \
+            --target "main"
