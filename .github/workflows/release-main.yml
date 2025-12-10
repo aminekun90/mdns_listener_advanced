@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 3.4.6)'
-        required: false
+        description: 'Version to publish (e.g., 1.2.3). If not provided, uses package.json version.'
+        required: true
         type: string
 
 permissions:
@@ -22,65 +22,46 @@ jobs:
       - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
 
-      # 1. Setup Node
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
           cache: "yarn"
 
-      # 2. Determine Version
-      - name: 🆔 Get Package Info
+      # 1. Bump Version
+      - name: 🆔 Set Version
         id: package
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            VERSION=$(node -p "require('./package.json').version")
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          npm version ${{ inputs.version }} --no-git-tag-version
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
 
-      # 3. Install & Build
+      # 2. Build
       - name: 🛠️ Install & Build
         run: |
           yarn install --frozen-lockfile
           yarn build
 
-      # 4. CRITICAL DEBUG: Check for Dirty Git State
+      # 3. Check for Dirty Git Status (Debugging)
       - name: 🕵️ Check Git Status
         run: |
-          echo "Checking for uncommitted changes..."
-          git status --porcelain
           if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::⚠️ GIT TREE IS DIRTY! Provenance will fail."
-            echo "Listing dirty files:"
+            echo "::warning::⚠️ Git tree is dirty! Attempting to ignore scripts to bypass."
             git status
-            
-            # EMERGENCY FIX: Ignore changes to dist so OIDC works
-            echo "Temporary fix: Stashing changes to clean tree"
-            git add .
-            git reset --hard
-            
-            # Re-run build just in case reset wiped it (unlikely if in .gitignore)
-            # If dist IS in .gitignore, git status would have been clean.
-            # If we are here, dist is NOT ignored.
-            echo "::warning::Your dist/ folder is likely missing from .gitignore!"
           else
-            echo "✅ Git tree is clean. Provenance should work."
+            echo "✅ Git tree is clean."
           fi
 
-      # 5. Publish to NPM
+      # 4. Publish to NPM
+      # --ignore-scripts: Stops Husky from dirtying the tree
+      # --provenance: Enables OIDC
       - name: 🚀 Publish to NPM
-        run: npm publish --provenance --access public --registry https://registry.npmjs.org/
+        run: npm publish --provenance --access public --ignore-scripts --registry https://registry.npmjs.org/
 
-      # 6. Create GitHub Release
+      # 5. Create Release
       - name: 🏷️ Create GitHub Release
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.package.outputs.version }}
+          VERSION: ${{ inputs.version }}
         run: |
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --generate-notes \
-            --target "main"
+          gh release create "v$VERSION" --title "v$VERSION" --generate-notes --target "main"
