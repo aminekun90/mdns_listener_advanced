@@ -119,7 +119,7 @@ jobs:
       # -----------------------------
       - name: Publish to NPM
         # Provenance enabled, Access public, Force registry
-        run: npm publish --provenance --access public --registry https://registry.npmjs.org/
+        run: npm publish --verbose --provenance --access public --registry https://registry.npmjs.org/
 
       # -----------------------------
       #  Publish to GitHub Packages
