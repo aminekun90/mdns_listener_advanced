@@ -10,7 +10,7 @@ permissions:
   contents: write
   packages: write
   issues: write
-  id-token: write # REQUIRED for NPM OIDC
+  id-token: write
 
 jobs:
   # JOB 1: Create the Release and Tag
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # REMOVED registry-url to prevent auth token errors
+          registry-url: "https://registry.npmjs.org"
 
       - name: Determine Release Version
         id: get_tag
@@ -70,7 +70,9 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     if: needs.create-release.outputs.release_created == 'true'
-    # REMOVED environment block to prevent OIDC mismatch errors
+    environment:
+      name: npm-publish
+      url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
 
     steps:
       - name: Checkout repository
@@ -83,11 +85,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # REMOVED registry-url to allow OIDC auth
-
-      - name: Force Public Registry
-        # Ensures we don't accidentally try to publish to GitHub Packages here
-        run: npm config set registry https://registry.npmjs.org/
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install & Build
         run: |
@@ -114,8 +112,8 @@ jobs:
       #  Publish to public NPM
       # -----------------------------
       - name: Publish to NPM
-        # Explicitly sets registry to ensure OIDC works with the public registry
-        run: npm publish --provenance --access public --registry https://registry.npmjs.org/
+        # No secret needed as we use npm publish with provenance Authentication happens automatically via OIDC
+        run: npm publish --provenance --access public
 
       # -----------------------------
       #  Publish to GitHub Packages
@@ -124,8 +122,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # We manually configure the registry for THIS step only
           npm pkg set name="@aminekun90/mdns-listener-advanced"
           npm config set @aminekun90:registry=https://npm.pkg.github.com/
           npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
-          npm publish --registry https://npm.pkg.github.com/
+          npm publish
