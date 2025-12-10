@@ -1,53 +1,62 @@
-// eslint.config.ts
-import tsParser from "@typescript-eslint/parser";
-import { defineConfig } from "eslint-define-config";
+import js from "@eslint/js";
+import prettierRecommended from "eslint-plugin-prettier/recommended";
+import vitest from "eslint-plugin-vitest";
+import { defineConfig } from "eslint/config";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+export default defineConfig([
+  {
+    ignores: ["node_modules/**", "dist/**", "build/**", "coverage/**"],
+  },
 
-export default defineConfig({
-  files: ["src/**/*.ts", "src/**/*.js", "__tests__/**/*.ts", "__test__/**/*.js"],
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
 
-  ignores: [
-    "node_modules/**",
-    "dist/**",
-    "build/**",
-    "coverage/**/*",
-  ],
+  // Prettier (First, to set baseline)
+  prettierRecommended,
 
-  languageOptions: {
-    parser: tsParser,
-    parserOptions: {
+  {
+    files: ["src/**/*.{ts,js}", "__tests__/**/*.{ts,js}"],
+
+    languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
-      project: "./tsconfig.json",
+
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
     },
-    globals: {
-      process: "readonly",
-      __dirname: "readonly",
-      console: "readonly",
-      describe: "readonly",
-      it: "readonly",
-      expect: "readonly",
-      beforeEach: "readonly",
-      afterEach: "readonly",
-      beforeAll: "readonly",
-      afterAll: "readonly",
+
+    rules: {
+      "no-console": "warn",
+
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+
+      "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
 
-  plugins: {
-    "@typescript-eslint": require("@typescript-eslint/eslint-plugin"),
-    prettier: require("eslint-plugin-prettier"),
-    vitest: require("eslint-plugin-vitest"),
+  {
+    files: ["__tests__/**/*.{ts,js}", "**/*.test.ts"],
+    plugins: {
+      vitest,
+    },
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      ...vitest.configs.recommended.rules,
+      "vitest/expect-expect": "off",
+    },
   },
-
-  rules: {
-    "no-console": "warn",
-    "prettier/prettier": ["error", { endOfLine: "auto" }],
-    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
-    "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/no-explicit-any": "off",
-  },
-
-  linterOptions: {
-    reportUnusedDisableDirectives: "warn",
-  },
-});
+]);

@@ -1,176 +1,164 @@
 export class DNSBuffer {
-    private readonly buffer: Buffer;
-    private offset: number = 0;
+  private readonly buffer: Buffer;
+  private offset: number = 0;
 
-    constructor(buffer?: Buffer) {
-        this.buffer = buffer || Buffer.alloc(0);
+  constructor(buffer?: Buffer) {
+    this.buffer = buffer || Buffer.alloc(0);
+  }
+
+  // --- Readers ---
+
+  readUInt16(): number {
+    const v = this.buffer.readUInt16BE(this.offset);
+    this.offset += 2;
+    return v;
+  }
+
+  readName(): string {
+    let name = "";
+    let jumped = false;
+    let jumpOffset = -1;
+    let currentOffset = this.offset;
+
+    while (true) {
+      if (currentOffset >= this.buffer.length) break;
+      const len = this.buffer.readUInt8(currentOffset);
+
+      // Handle Compression Pointer (0xC0)
+      if ((len & 0xc0) === 0xc0) {
+        if (!jumped) jumpOffset = currentOffset + 2;
+        const b2 = this.buffer.readUInt8(currentOffset + 1);
+        currentOffset = ((len & 0x3f) << 8) | b2;
+        jumped = true;
+        continue;
+      }
+
+      currentOffset++;
+      if (len === 0) break;
+      if (name.length > 0) name += ".";
+      name += this.buffer.toString("utf8", currentOffset, currentOffset + len);
+      currentOffset += len;
     }
 
-    // --- Readers ---
+    this.offset = jumped ? jumpOffset : currentOffset;
+    return name;
+  }
 
-    readUInt16(): number {
-        const v = this.buffer.readUInt16BE(this.offset);
-        this.offset += 2;
-        return v;
+  readAnswer() {
+    const name = this.readName();
+    const type = this.readUInt16();
+    const cls = this.readUInt16();
+    const ttl = this.buffer.readUInt32BE(this.offset);
+    this.offset += 4;
+    const len = this.readUInt16();
+
+    let data: any = null;
+    const endOffset = this.offset + len;
+
+    if (type === 1) {
+      // A (IPv4)
+      data = this.buffer.subarray(this.offset, this.offset + len).join(".");
+      this.offset += len;
+    } else if (type === 16) {
+      // TXT
+      data = [this.buffer.subarray(this.offset, this.offset + len)];
+      this.offset += len;
+    } else if (type === 12) {
+      // PTR (Pointer to another name)
+      // The data is just another domain name
+      data = this.readName();
+    } else if (type === 33) {
+      // SRV (Service Location)
+      const priority = this.readUInt16();
+      const weight = this.readUInt16();
+      const port = this.readUInt16();
+      const target = this.readName();
+      data = { priority, weight, port, target };
+    } else {
+      // Unknown type, skip it safely
+      this.offset += len;
     }
 
-    readName(): string {
-        let name = '';
-        let jumped = false;
-        let jumpOffset = -1;
-        let currentOffset = this.offset;
+    // Safety sync
+    this.offset = endOffset;
+    return { name, type, class: cls, ttl, data };
+  }
 
-        while (true) {
-            if (currentOffset >= this.buffer.length) break;
-            const len = this.buffer.readUInt8(currentOffset);
+  get isDone() {
+    return this.offset >= this.buffer.length;
+  }
 
-            // Handle Compression Pointer (0xC0)
-            if ((len & 0xC0) === 0xC0) {
-                if (!jumped) jumpOffset = currentOffset + 2;
-                const b2 = this.buffer.readUInt8(currentOffset + 1);
-                currentOffset = ((len & 0x3F) << 8) | b2;
-                jumped = true;
-                continue;
-            }
+  static createQuery(qname: string, qtype: number = 12): Buffer {
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(0, 0); // ID (0)
+    header.writeUInt16BE(0, 2); // Flags (0 = Query)
+    header.writeUInt16BE(1, 4); // QDCOUNT (1 Question)
+    header.writeUInt16BE(0, 6); // ANCOUNT
+    header.writeUInt16BE(0, 8); // NSCOUNT
+    header.writeUInt16BE(0, 10); // ARCOUNT
+    const qFooter = Buffer.alloc(4);
+    qFooter.writeUInt16BE(qtype, 0); // Type (PTR=12, A=1, ANY=255)
+    qFooter.writeUInt16BE(1, 2); // Class IN
+    return Buffer.concat([header, this.encodeName(qname), qFooter]);
+  }
+  // --- Writers ---
 
-            currentOffset++;
-            if (len === 0) break;
-            if (name.length > 0) name += '.';
-            name += this.buffer.toString('utf8', currentOffset, currentOffset + len);
-            currentOffset += len;
-        }
+  static createResponse(name: string, ip: string, txtData: { [key: string]: string }): Buffer {
+    const buffers: Buffer[] = [];
 
-        this.offset = jumped ? jumpOffset : currentOffset;
-        return name;
+    // --- 1. DNS Header ---
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(0, 0); // ID (0)
+    header.writeUInt16BE(0x8400, 2); // Flags (Response + Authoritative)
+    header.writeUInt16BE(0, 4); // QDCOUNT (0 Questions)
+    header.writeUInt16BE(2, 6); // ANCOUNT (2 Answers)
+    header.writeUInt16BE(0, 8); // NSCOUNT
+    header.writeUInt16BE(0, 10); // ARCOUNT
+
+    buffers.push(header);
+
+    // --- 2. Answer 1: A Record (IPv4) ---
+    const aHeader = Buffer.alloc(10);
+    aHeader.writeUInt16BE(1, 0); // Type A
+    aHeader.writeUInt16BE(1, 2); // Class IN
+    aHeader.writeUInt32BE(120, 4); // TTL
+    aHeader.writeUInt16BE(4, 8); // Data Length (4 bytes)
+
+    // FIX: Push Name, Header, and IP in one go
+    buffers.push(this.encodeName(name), aHeader, Buffer.from(ip.split(".").map(Number)));
+
+    // --- 3. Answer 2: TXT Record ---
+    const txtParts: Buffer[] = [];
+    for (const [k, v] of Object.entries(txtData)) {
+      const buf = Buffer.from(`${k}=${v}`);
+      const len = Buffer.alloc(1);
+      len.writeUInt8(buf.length);
+      txtParts.push(len, buf);
     }
+    const fullTxt = Buffer.concat(txtParts);
 
-    readAnswer() {
-        const name = this.readName();
-        const type = this.readUInt16();
-        const cls = this.readUInt16();
-        const ttl = this.buffer.readUInt32BE(this.offset);
-        this.offset += 4;
-        const len = this.readUInt16();
+    const txtHeader = Buffer.alloc(10);
+    txtHeader.writeUInt16BE(16, 0); // Type TXT
+    txtHeader.writeUInt16BE(1, 2); // Class IN
+    txtHeader.writeUInt32BE(120, 4); // TTL
+    txtHeader.writeUInt16BE(fullTxt.length, 8); // Data Length
 
-        let data: any = null;
-        const endOffset = this.offset + len;
+    // FIX: Push Name, Header, and TXT Data in one go
+    buffers.push(this.encodeName(name), txtHeader, fullTxt);
 
-        if (type === 1) { // A (IPv4)
-            data = this.buffer.subarray(this.offset, this.offset + len).join('.');
-            this.offset += len;
-        }
-        else if (type === 16) { // TXT
-            data = [this.buffer.subarray(this.offset, this.offset + len)];
-            this.offset += len;
-        }
-        else if (type === 12) { // PTR (Pointer to another name)
-            // The data is just another domain name
-            data = this.readName();
-        }
-        else if (type === 33) { // SRV (Service Location)
-            const priority = this.readUInt16();
-            const weight = this.readUInt16();
-            const port = this.readUInt16();
-            const target = this.readName();
-            data = { priority, weight, port, target };
-        }
-        else {
-            // Unknown type, skip it safely
-            this.offset += len;
-        }
+    return Buffer.concat(buffers);
+  }
 
-        // Safety sync
-        this.offset = endOffset;
-        return { name, type, class: cls, ttl, data };
+  static encodeName(name: string): Buffer {
+    const parts = name.split(".");
+    const buf = Buffer.alloc(name.length + 2);
+    let offset = 0;
+    for (const part of parts) {
+      buf.writeUInt8(part.length, offset++);
+      buf.write(part, offset, "utf8");
+      offset += part.length;
     }
-
-    get isDone() { return this.offset >= this.buffer.length; }
-
-
-    static createQuery(qname: string, qtype: number = 12): Buffer {
-
-        const header = Buffer.alloc(12);
-        header.writeUInt16BE(0, 0);      // ID (0)
-        header.writeUInt16BE(0, 2);      // Flags (0 = Query)
-        header.writeUInt16BE(1, 4);      // QDCOUNT (1 Question)
-        header.writeUInt16BE(0, 6);      // ANCOUNT
-        header.writeUInt16BE(0, 8);      // NSCOUNT
-        header.writeUInt16BE(0, 10);     // ARCOUNT
-        const qFooter = Buffer.alloc(4);
-        qFooter.writeUInt16BE(qtype, 0); // Type (PTR=12, A=1, ANY=255)
-        qFooter.writeUInt16BE(1, 2);     // Class IN
-        return Buffer.concat([
-            header,
-            this.encodeName(qname),
-            qFooter
-        ]);
-    }
-    // --- Writers ---
-
-    static createResponse(name: string, ip: string, txtData: { [key: string]: string }): Buffer {
-        const buffers: Buffer[] = [];
-
-        // --- 1. DNS Header ---
-        const header = Buffer.alloc(12);
-        header.writeUInt16BE(0, 0);       // ID (0)
-        header.writeUInt16BE(0x8400, 2);  // Flags (Response + Authoritative)
-        header.writeUInt16BE(0, 4);       // QDCOUNT (0 Questions)
-        header.writeUInt16BE(2, 6);       // ANCOUNT (2 Answers)
-        header.writeUInt16BE(0, 8);       // NSCOUNT
-        header.writeUInt16BE(0, 10);      // ARCOUNT
-
-        buffers.push(header);
-
-        // --- 2. Answer 1: A Record (IPv4) ---
-        const aHeader = Buffer.alloc(10);
-        aHeader.writeUInt16BE(1, 0);    // Type A
-        aHeader.writeUInt16BE(1, 2);    // Class IN
-        aHeader.writeUInt32BE(120, 4);  // TTL
-        aHeader.writeUInt16BE(4, 8);    // Data Length (4 bytes)
-
-        // FIX: Push Name, Header, and IP in one go
-        buffers.push(
-            this.encodeName(name),
-            aHeader,
-            Buffer.from(ip.split('.').map(Number))
-        );
-
-        // --- 3. Answer 2: TXT Record ---
-        const txtParts: Buffer[] = [];
-        for (const [k, v] of Object.entries(txtData)) {
-            const buf = Buffer.from(`${k}=${v}`);
-            const len = Buffer.alloc(1);
-            len.writeUInt8(buf.length);
-            txtParts.push(len, buf);
-        }
-        const fullTxt = Buffer.concat(txtParts);
-
-        const txtHeader = Buffer.alloc(10);
-        txtHeader.writeUInt16BE(16, 0); // Type TXT
-        txtHeader.writeUInt16BE(1, 2);  // Class IN
-        txtHeader.writeUInt32BE(120, 4); // TTL
-        txtHeader.writeUInt16BE(fullTxt.length, 8); // Data Length
-
-        // FIX: Push Name, Header, and TXT Data in one go
-        buffers.push(
-            this.encodeName(name),
-            txtHeader,
-            fullTxt
-        );
-
-        return Buffer.concat(buffers);
-    }
-
-    static encodeName(name: string): Buffer {
-        const parts = name.split('.');
-        const buf = Buffer.alloc(name.length + 2);
-        let offset = 0;
-        for (const part of parts) {
-            buf.writeUInt8(part.length, offset++);
-            buf.write(part, offset, 'utf8');
-            offset += part.length;
-        }
-        buf.writeUInt8(0, offset);
-        return buf.subarray(0, offset + 1);
-    }
+    buf.writeUInt8(0, offset);
+    return buf.subarray(0, offset + 1);
+  }
 }

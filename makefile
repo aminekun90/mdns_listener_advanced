@@ -1,14 +1,12 @@
 # MakeFile used to install project for dev env
 install:
-	npm install -g @commitlint/config-conventional @commitlint/cli 
-	npm ci
+	npm install -g @commitlint/config-conventional @commitlint/cli
+	yarn install
 start:
-	npm start
-test:
-	npm run test
+	yarn start
 build:
-	npm run build
+	yarn build
 lint:
-	npx eslint ./
+	yarn lint
 lint-fix:
-	npx eslint ./ --fix
+	yarn lint --fix

@@ -29,5 +29,5 @@ export enum EmittedEvent {
   RESPONSE = "response",
   RAW_RESPONSE = "rawResponse",
   ERROR = "error",
-  DISCOVERY = "discovery"
+  DISCOVERY = "discovery",
 }
