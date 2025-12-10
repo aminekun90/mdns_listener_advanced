@@ -85,7 +85,8 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          registry-url: "https://registry.npmjs.org"
+          # REMOVED: registry-url: "https://registry.npmjs.org" 
+          # Removing this prevents setup-node from creating a broken .npmrc that expects a secret token.
 
       - name: Install & Build
         run: |
