@@ -13,7 +13,7 @@ permissions:
   id-token: write # REQUIRED for NPM OIDC
 
 jobs:
-  # JOB 1: Create the Release
+  # JOB 1: Create the Release and Tag
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # NO registry-url (OIDC handles auth)
+          # CRITICAL: Do NOT add registry-url here. It breaks OIDC authentication.
 
       - name: Determine Release Version
         id: get_tag
@@ -64,19 +64,18 @@ jobs:
             echo "release_created=true" >> $GITHUB_OUTPUT
           fi
 
-  # JOB 2: Publish to NPM
+  # JOB 2: Security Audit + Publish
   publish-npm:
     name: Audit & Publish
     needs: create-release
     runs-on: ubuntu-latest
     if: needs.create-release.outputs.release_created == 'true'
     
-    # CRITICAL: This enables the "Environment Pattern"
-    # It changes the OIDC signature to match your NPM "npm-publish" setting
+    # CRITICAL: This MUST match the "Environment name" in your NPM screenshot exactly.
     environment:
       name: npm-publish
       url: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.target_tag }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -88,9 +87,10 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          # NO registry-url
+          # CRITICAL: No registry-url here either.
 
       - name: Force Public Registry
+        # Explicitly tells npm we are targeting the public registry
         run: npm config set registry https://registry.npmjs.org/
 
       - name: Install & Build
@@ -99,7 +99,7 @@ jobs:
           yarn build
 
       # -----------------------------
-      #  Run Security Audit
+      #  Run Shai-Hulud Security Audit
       # -----------------------------
       - name: Run Shai-Hulud Audit
         shell: bash
@@ -115,11 +115,11 @@ jobs:
           retention-days: 7
 
       # -----------------------------
-      #  Publish to Public NPM
+      #  Publish to public NPM
       # -----------------------------
       - name: Publish to NPM
-        # Provenance enabled, Access public, Force registry
-        run: npm publish --verbose --provenance --access public --registry https://registry.npmjs.org/
+        # provenance uses OIDC to authenticate with the permissions above
+        run: npm publish --verbose --provenance --access public
 
       # -----------------------------
       #  Publish to GitHub Packages
@@ -131,4 +131,5 @@ jobs:
           npm pkg set name="@aminekun90/mdns-listener-advanced"
           npm config set @aminekun90:registry=https://npm.pkg.github.com/
           npm config set //npm.pkg.github.com/:_authToken="${NODE_AUTH_TOKEN}"
+          # Force the GitHub registry specifically for this command
           npm publish --registry https://npm.pkg.github.com/
