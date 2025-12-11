@@ -21,7 +21,7 @@ export class Core {
   private mdnsHostsFile?: string;
   private readonly debugEnabled: boolean;
   private publishTimer?: NodeJS.Timeout;
-  private disableListener: boolean;
+  private disableListener: boolean = false;
   private disablePublisher: boolean;
   private error = false;
 
@@ -34,7 +34,7 @@ export class Core {
 
   /**
    * Creates a new instance of the mDNS Core.
-   * * @param hostsList - An optional array of specific hostnames to listen for (e.g. ['my-device']).
+   * @param hostsList - An optional array of specific hostnames to listen for (e.g. ['my-device']).
    * @param mdnsHostsPath - An optional path to a file containing hostnames (newline separated).
    * @param options - Configuration options object (debug, disableListener, disablePublisher, noColor).
    * @param logger - An optional custom logger instance.
@@ -48,7 +48,7 @@ export class Core {
     this.hostnames = hostsList ?? [];
     this.mdnsHostsFile = mdnsHostsPath ?? undefined;
     this.debugEnabled = !!options?.debug;
-    this.disableListener = !!options?.disableListener;
+    this.setDisableListener(!!options?.disableListener);
     this.disablePublisher = !!options?.disablePublisher;
 
     this.logger =
@@ -174,7 +174,7 @@ export class Core {
   /**
    * Broadcasts an mDNS Response packet.
    * Now supports periodic announcements (Heartbeat).
-   * * @param name - The hostname/service name to publish.
+   * @param name - The hostname/service name to publish.
    * @param interval - (Optional) Time in ms to repeat the broadcast (e.g., 30000). 0 = once.
    */
   public publish(name: string, interval: number = 30000): void {
@@ -228,9 +228,9 @@ export class Core {
   /**
    * Sends a Discovery Query (PTR) to the network.
    * Used to find all devices of a specific type.
-   * * @param serviceType - The service to scan for (default: "_services._dns-sd._udp.local").
+   * @param serviceType - The service to scan for (default: "_services._dns-sd._udp.local").
    */
-  public scan(serviceType: string = "_services._dns-sd._udp.local") {
+  public scan(serviceType: string = "_services._dns-sd._udp.local"): void {
     if (this.disableListener) {
       this.logger.warn("Cannot scan because listener is disabled.");
       return;
@@ -252,7 +252,7 @@ export class Core {
   /**
    * Binds the UDP socket to port 5353 and joins the multicast group.
    * Starts receiving mDNS packets.
-   * * @returns The EventEmitter instance to listen for 'response' or 'discovery' events.
+   * @returns The EventEmitter instance to listen for 'response' or 'discovery' events.
    */
   public listen(): EventEmitter {
     if (this.disableListener) return this.myEvent;
@@ -294,7 +294,7 @@ export class Core {
   /**
    * The raw 'message' handler for the UDP socket.
    * Parses the binary DNS buffer into a structured object.
-   * * @param msg - The raw Buffer received from the network.
+   * @param msg - The raw Buffer received from the network.
    */
   private handleSocketMessage(msg: Buffer) {
     try {
@@ -344,7 +344,7 @@ export class Core {
   /**
    * Orchestrates the logic for processed DNS answers.
    * Routes data to either the Targeted Host logic or the Discovery logic.
-   * * @param response - The structured object containing parsed answers.
+   * @param response - The structured object containing parsed answers.
    */
   private handleResponse(response: { answers: Array<DeviceBuffer> }): void {
     if (!response.answers?.length) return;
@@ -361,7 +361,7 @@ export class Core {
   /**
    * Checks if any of the incoming answers match the specific hostnames
    * provided in the constructor.
-   * * @param answers - Array of parsed DNS records.
+   * @param answers - Array of parsed DNS records.
    */
   private checkTargetedHosts(answers: Array<DeviceBuffer>): void {
     const foundDevices = answers
@@ -377,13 +377,15 @@ export class Core {
   /**
    * Helper: Determines if an answer is a TXT record (Type 16)
    * and matches one of the monitored hostnames.
+   * @param answer DeviceBuffer answer
    */
   private isMatchingTxtRecord(answer: DeviceBuffer): boolean {
     return answer.type === 16 && this.hostnames.some((hostname) => answer.name?.includes(hostname));
   }
 
   /**
-   * Helper: safe-guards buffer conversion and maps the answer to a Device object.
+   * Helper: safeguards buffer conversion and maps the answer to a Device object.
+   * @param answer DeviceBuffer answer
    */
   private convertToDevice(answer: DeviceBuffer): Device | null {
     let txtBuffer: Buffer | null = null;
@@ -406,7 +408,7 @@ export class Core {
   /**
    * Scans incoming answers for Discovery-related records (PTR, SRV, A).
    * Emits a 'discovery' event for each relevant record found.
-   * * @param answers - Array of parsed DNS records.
+   * @param answers - Array of parsed DNS records.
    */
   private checkDiscovery(answers: Array<DeviceBuffer>): void {
     for (const a of answers) {
@@ -426,7 +428,7 @@ export class Core {
 
   /**
    * Helper to normalize and emit discovery events.
-   * * @param record - The parsed device buffer record.
+   * @param record - The parsed device buffer record.
    * @param type - The standardized type string.
    */
   private emitDiscovery(record: DeviceBuffer, type: "PTR" | "SRV" | "A"): void {
@@ -441,7 +443,7 @@ export class Core {
    * Stops the MDNS service.
    * Closes the UDP socket and removes all event listeners.
    */
-  public stop() {
+  public stop(): void {
     this.socket.close();
     this.myEvent.removeAllListeners();
     this.isListening = false; // Reset listening state

@@ -32,8 +32,10 @@
     "node": ">=22.21.1"
   },
   "scripts": {
+    "start": "npx -y tsx example.ts",
     "pack": "yarn build && npm pack",
     "test": "vitest run",
+
     "test:cov": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
