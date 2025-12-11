@@ -1,15 +1,15 @@
 // src/Core.ts
+import { MDNS_IP, MDNS_PORT, NPM_URL } from "@/const.js";
+import { DNSBuffer } from "@/protocol/DNSBuffer.js";
+import { Device, DeviceBuffer, EmittedEvent, Options } from "@/types.js";
+import { SimpleLogger } from "@/utils/Logger.js";
+import { parseTxtRecord } from "@/utils/parsers.js";
 import { randomUUID } from "node:crypto";
 import dgram from "node:dgram";
 import { EventEmitter } from "node:events";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir, networkInterfaces } from "node:os";
 import { join } from "node:path";
-import { MDNS_IP, MDNS_PORT, NPM_URL } from "./const.js";
-import { DNSBuffer } from "./protocol/DNSBuffer.js";
-import { Device, DeviceBuffer, EmittedEvent, Options } from "./types.js";
-import { SimpleLogger } from "./utils/Logger.js";
-import { parseTxtRecord } from "./utils/parsers.js";
 
 /**
  * The main mDNS Core class.

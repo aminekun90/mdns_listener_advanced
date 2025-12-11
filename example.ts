@@ -1,6 +1,4 @@
-// @ts-expect-error No relative path
-import Core, { EmittedEvent, Device } from "./src";
-
+import { Core, Device, EmittedEvent } from "./src";
 
 // import Core, { EmittedEvent } from "./index.ts";
 // use this line instead when running the example outside the repo

@@ -3,10 +3,7 @@
  * Main entry point – re-exports the Core class and related types.
  */
 
-import { Core } from "./Core.js";
-
-// Default export for CommonJS interop
-export default Core;
+export { Core } from "@/Core.js";
 
 // Re-export shared types
 export * from "./types.js";
