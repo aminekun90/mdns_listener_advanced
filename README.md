@@ -98,6 +98,16 @@ mdns.publish("MyCoolService", 30000); // 30000 ms = 30 seconds by default
 // Your device is now visible to other mDNS scanners!
 ```
 
+### 4. Run the provided example
+
+Clone the repository and run the following command:
+
+```bash
+# optional install (no dependencies required to run the example)
+# yarn install
+yarn start
+```
+
 ## API Documentation
 
 Class: `Core`
