@@ -1,9 +1,6 @@
 import { Core, Device, EmittedEvent } from "./src";
-
-// import Core, { EmittedEvent } from "./index.ts";
-// use this line instead when running the example outside the repo
+// check README examples
 const ref = "MyDevice2";
-
 // 1. Initialize
 const mdns = new Core([ref], null, {
   debug: false,
@@ -40,7 +37,7 @@ mdns.scan("_services._dns-sd._udp.local");
 
 // --- GRACEFUL SHUTDOWN (Ctrl + C) ---
 process.on("SIGINT", () => {
-  mdns.info("\n🛑 Ctrl+C detected. Stopping mDNS Service...");
+  mdns.info("\n🛑 Stopping mDNS Service...");
 
   // This closes the socket and removes listeners
   mdns.stop();
