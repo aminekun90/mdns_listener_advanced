@@ -457,3 +457,5 @@ export class Core {
     this.logger.info(...args);
   }
 }
+
+export default Core;

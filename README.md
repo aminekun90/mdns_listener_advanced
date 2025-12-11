@@ -68,6 +68,7 @@ New in v3.4.0: actively query the network to find devices (Printers, Chromecast,
 
 ```typescript
 import { Core, EmittedEvent, Device } from 'mdns-listener-advanced';
+// or import Core,{ EmittedEvent, Device } from 'mdns-listener-advanced';
 
 const mdns = new Core();
 const event = mdns.listen();
@@ -89,6 +90,7 @@ Announce your service to the network.
 
 ```javascript
 import { Core } from "mdns-listener-advanced";
+// or import Core,{ EmittedEvent, Device } from 'mdns-listener-advanced';
 
 const mdns = new Core();
 

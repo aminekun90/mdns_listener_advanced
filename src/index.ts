@@ -3,7 +3,14 @@
  * Main entry point – re-exports the Core class and related types.
  */
 
-export { Core } from "@/Core.js";
+// 1. Import the class from the source
+import { Core } from "./Core.js";
 
-// Re-export shared types
+// 2. Re-export shared types
 export * from "./types.js";
+
+// 3. Export as Named Export
+export { Core };
+
+// 4. Export as Default Export
+export default Core;
