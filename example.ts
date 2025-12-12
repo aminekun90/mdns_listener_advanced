@@ -20,9 +20,9 @@ event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
   mdns.info("✅ Found TARGETED Host:", found_hostnames);
 });
 
-// event.on(EmittedEvent.DISCOVERY, (device: Device) => {
-//   mdns.info(`🔎 Discovered [${device.type}]: ${device.name}`, device.data);
-// });
+event.on(EmittedEvent.DISCOVERY, (device: Device) => {
+  mdns.info(`🔎 Discovered [${device.type}]: ${device.name}`, device.data);
+});
 
 event.on(EmittedEvent.ERROR, (error: Error) => {
   mdns.info("❌ Error:", error.message);
