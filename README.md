@@ -157,12 +157,12 @@ new Core(hostsList, mdnsHostsPath, options, logger)
 
 ### Methods
 
-| Method                  | Description                                                                                                                    |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| listen()                | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter.                                                 |
+| Method                       | Description                                                                                                                                                |
+|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| listen(ref)                  | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter, you can provide a string to listen for a specific host check example.ts.    |
 | publish(name,data, interval) | "Broadcasts an mDNS response, announcing name.local with your IP address. add data to the TXT record, personalize the interval by default set to 30000ms." |
-| scan(serviceType)       | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local.                                       |
-| stop()                  | Closes the socket and removes all event listeners.                                                                             |
+| scan(serviceType)            | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local.                                                                   |
+| stop()                       | Closes the socket and removes all event listeners.                                                                                                         |
 
 ### Events (EmittedEvent)
 
