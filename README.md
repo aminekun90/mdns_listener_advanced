@@ -119,7 +119,7 @@ output:
     name: 'MyDevice2',
     type: 'TXT',
     data: {
-      uuid: '"eec91263-de12-4525-ba08-81adad17cebb"',
+      uuid: '"eec91263-de12-4525-ba08-81adad17-ceb3"',
       ipv4: '"192.168.1.102"',
       hello: 'world'
     }
@@ -199,7 +199,7 @@ If you do not provide a constructor list or this file, the listener will warn yo
 - Firewall: mDNS uses UDP port 5353. Ensure your firewall allows traffic on this port.
 - Docker: If running in Docker, you must use network_mode: "host" so the container can receive Multicast packets from the physical network.
 - Windows: You might need to allow Node.js through the Windows Defender Firewall on the first run.
-- MacOS + Docker limitations : running docker in host mode might not work on Mac-OS, since the container is not able to access the host network.
+- macOS + Docker limitations : running docker in host mode might not work on macOS, since the container is not able to access the host network.
 
 ## Support & Contribution
 

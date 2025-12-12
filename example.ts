@@ -1,4 +1,5 @@
-import { Core, Device, EmittedEvent } from "./src";
+import { Core, Device, EmittedEvent } from "@/index.js";
+import { EventEmitter } from "node:events";
 // check README examples
 const ref = "MyDevice2";
 // 1. Initialize
@@ -10,10 +11,10 @@ const mdns = new Core([], null, {
 mdns.info(`📢 Publishing ${ref}...`);
 mdns.publish(ref, { hello: "world" });
 // // 2. Start Listener
-let event = mdns.listen();
+const event: EventEmitter = mdns.listen();
 mdns.stop();
 
-event = mdns.listen("MyDevice1\nMyDevice2");
+mdns.listen("MyDevice1\nMyDevice2");
 // // --- HANDLERS ---
 
 event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
