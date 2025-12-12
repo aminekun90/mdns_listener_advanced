@@ -11,10 +11,25 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir, networkInterfaces } from "node:os";
 import { join } from "node:path";
 
+// Define a minimal Logger interface to avoid 'any' usage
+interface Logger {
+  info(...args: any[]): void;
+  warn(...args: any[]): void;
+  debug(...args: any[]): void;
+  error(...args: any[]): void;
+}
+
 /**
  * The main mDNS Core class.
- * Handles the UDP socket, packet parsing, publishing, and listening logic.
- * Designed to be zero-dependency and cross-platform.
+ *
+ * This class handles the low-level UDP socket operations, implements the mDNS protocol
+ * (RFC 6762) for packet parsing and generation, and manages the lifecycle of
+ * publishing and listening for services on the local network.
+ *
+ * It is designed to be:
+ * - **Zero-Dependency:** Uses native Node.js modules (dgram, crypto, etc).
+ * - **Cross-Platform:** Compatible with Windows, macOS, and Linux.
+ * - **Resilient:** Handles socket errors, re-binding, and resource cleanup.
  */
 export class Core {
   private hostnames: string[];
@@ -25,25 +40,26 @@ export class Core {
   private disablePublisher: boolean;
   private error = false;
 
-  // Track listening state to prevent double-binding
+  // Track listening state to prevent double-binding or race conditions
   private isListening = false;
 
-  private readonly socket: dgram.Socket;
+  private socket!: dgram.Socket;
   private readonly myEvent: EventEmitter;
-  private readonly logger: SimpleLogger;
+  private readonly logger: Logger;
 
   /**
    * Creates a new instance of the mDNS Core.
-   * @param hostsList - An optional array of specific hostnames to listen for (e.g. ['my-device']).
-   * @param mdnsHostsPath - An optional path to a file containing hostnames (newline separated).
+   *
+   * @param hostsList - An optional array of specific hostnames to listen for (e.g. `['MyDevice', 'Printer']`).
+   * @param mdnsHostsPath - An optional absolute path to a file containing hostnames (newline separated).
    * @param options - Configuration options object (debug, disableListener, disablePublisher, noColor).
-   * @param logger - An optional custom logger instance.
+   * @param logger - An optional custom logger instance conforming to the Logger interface.
    */
   constructor(
     hostsList?: string[] | null,
     mdnsHostsPath?: string | null,
     options?: Options,
-    logger?: any,
+    logger?: Logger,
   ) {
     this.hostnames = hostsList ?? [];
     this.mdnsHostsFile = mdnsHostsPath ?? undefined;
@@ -59,13 +75,36 @@ export class Core {
       });
     this.myEvent = new EventEmitter();
 
+    // Initialize the UDP socket immediately
+    this.initSocket();
+  }
+
+  /**
+   * Initializes or re-initializes the UDP socket.
+   *
+   * @remarks
+   * This method ensures that we don't accidentally overwrite an active socket.
+   * If the socket is closed or undefined, it creates a new `udp4` socket with `reuseAddr` enabled,
+   * allowing multiple mDNS applications to coexist on port 5353.
+   */
+  private initSocket(): void {
+    // If socket exists and is active, do nothing to prevent unnecessary churn
+    if (this.socket && typeof this.socket.address === "function") {
+      try {
+        this.socket.address(); // Will throw if closed
+        return;
+      } catch {
+        // Socket is closed, proceed to re-create
+      }
+    }
+
     // Bind to UDP4 with reuseAddr to allow multiple applications to use port 5353
     this.socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
 
     this.socket.on("error", (err) => {
       this.logger.error("Socket Error", err);
       this.error = true;
-      this.isListening = false; // Reset state on error
+      this.isListening = false;
     });
 
     this.socket.on("message", (msg) => this.handleSocketMessage(msg));
@@ -83,7 +122,7 @@ export class Core {
 
   /**
    * Dynamically enable or disable the listener functionality.
-   * @param value - True to disable, False to enable.
+   * @param value - `true` to disable listening, `false` to enable.
    */
   public setDisableListener(value: boolean): void {
     this.disableListener = value;
@@ -91,16 +130,20 @@ export class Core {
 
   /**
    * Dynamically enable or disable the publisher functionality.
-   * @param value - True to disable, False to enable.
+   * @param value - `true` to disable publishing, `false` to enable.
    */
   public setDisablePublisher(value: boolean): void {
     this.disablePublisher = value;
   }
 
   /**
-   * Prepares the list of hostnames to listen for.
-   * Reads from the file system or uses the provided list.
-   * @param ref - Optional string reference to specific hosts to listen for separated by newlines "\n".
+   * Prepares the internal list of hostnames to listen for.
+   *
+   * @remarks
+   * Reads from the file system (if a path is provided) or uses the provided list.
+   * Parses the input to remove comments (lines starting with #) and empty lines.
+   *
+   * @param ref - Optional string containing hostnames separated by newlines `\n`. Overrides other sources if provided.
    */
   private __initListener(ref?: string): void {
     try {
@@ -120,29 +163,27 @@ export class Core {
 
   /**
    * Resolves the source of the hostnames list.
-   * Priority:
-   * 1. Explicit file path provided in constructor.
-   * 2. Array provided in constructor.
-   * 3. Default OS file location (~/.mdns-hosts).
-   * * @returns The raw string content of hostnames.
+   *
+   * Priority Order:
+   * 1. Explicit file path provided in constructor (`mdnsHostsPath`).
+   * 2. Array provided in constructor (`hostsList`).
+   * 3. Default OS file location (`~/.mdns-hosts`).
+   *
+   * @returns The raw string content of hostnames.
    * @throws Error if no hosts are found and no defaults exist.
    */
   private __getHosts(): string {
     if (this.mdnsHostsFile && existsSync(this.mdnsHostsFile)) {
       return readFileSync(this.mdnsHostsFile, { encoding: "utf-8" });
     }
-
     if (this.hostnames && this.hostnames.length > 0) {
       return this.hostnames.join("\n");
     }
-
     const defaultFile = join(homedir(), ".mdns-hosts");
-
     if (existsSync(defaultFile)) {
       this.mdnsHostsFile = defaultFile;
       return readFileSync(defaultFile, { encoding: "utf-8" });
     }
-
     this.logger.warn(
       "Hostnames or path to hostnames is not provided, listening to a host might be compromised!",
     );
@@ -150,8 +191,13 @@ export class Core {
   }
 
   /**
-   * helper to find the first non-internal IPv4 address of this machine.
-   * Used for publishing the device's location.
+   * Finds the first non-internal IPv4 address of the local machine.
+   *
+   * @remarks
+   * This is crucial for the "Publish" feature, as we need to announce where other devices
+   * can reach us. It filters out internal (localhost) and link-local (169.x.x.x) addresses.
+   *
+   * @returns The IPv4 address string (e.g., "192.168.1.50") or `undefined` if none found.
    */
   private getLocalIpAddress(): string | undefined {
     const ifaces = networkInterfaces();
@@ -168,15 +214,15 @@ export class Core {
   }
 
   /**
-   * Broadcasts an mDNS Response packet.
-   * This effectively "publishes" a service or device to the network.
-   * * @param name - The hostname/service name to publish (e.g. "MyDevice").
-   */
-  /**
-   * Broadcasts an mDNS Response packet.
-   * Now supports periodic announcements (Heartbeat).
-   * @param name - The hostname/service name to publish.
-   * @param interval - (Optional) Time in ms to repeat the broadcast (e.g., 30000). 0 = once.
+   * Broadcasts an mDNS Response packet (Announce).
+   *
+   * This method "publishes" a service or device to the network by sending a generic
+   * DNS response containing its IP and optional TXT data. It supports a heartbeat
+   * mechanism to keep the service alive in the cache of other devices.
+   *
+   * @param name - The hostname/service name to publish (e.g. "MyDevice").
+   * @param data - Optional object to include in the TXT record (e.g. `{ version: "1.0" }`).
+   * @param interval - Time in ms to repeat the broadcast (Heartbeat). Default: `30000` (30s). Set to `0` for a single shot.
    */
   public publish(name: string, data: any = {}, interval: number = 30000): void {
     if (this.disablePublisher) {
@@ -187,8 +233,10 @@ export class Core {
     // Generate a consistent UUID for this session
     const uuid = `"${randomUUID()}"`;
 
-    // Define the sending logic
     const sendAnnouncement = () => {
+      // Safety check: Don't try to send if socket is closed
+      if (!this.socket) return;
+
       const ip = this.getLocalIpAddress();
       if (!ip) {
         this.logger.warn("Could not find local IP during publish");
@@ -203,23 +251,27 @@ export class Core {
 
       const packet = DNSBuffer.createResponse(name, ip, txtData);
 
-      this.socket.send(packet, 0, packet.length, MDNS_PORT, MDNS_IP, (err) => {
-        if (err) this.logger.error("Failed to publish", err);
-        else this.logger.debug("Published hostname:", name); // Changed to debug to avoid spam
-      });
+      try {
+        this.socket.send(packet, 0, packet.length, MDNS_PORT, MDNS_IP, (err) => {
+          if (err) this.logger.error("Failed to publish", err);
+          else this.logger.debug("Published hostname:", name);
+        });
+      } catch (err) {
+        this.logger.warn("Socket send failed (socket likely closed)", err);
+      }
     };
 
     // 1. Send immediately
     this.logger.info(`Starting publication for: ${name}`);
     sendAnnouncement();
 
-    // 2. Clear any existing timer to prevent duplicates
+    // 2. Clear any existing timer to avoid overlaps
     if (this.publishTimer) {
       clearInterval(this.publishTimer);
       this.publishTimer = undefined;
     }
 
-    // 3. Set up the interval if requested
+    // 3. Set up the interval heartbeat
     if (interval > 0) {
       this.publishTimer = setInterval(sendAnnouncement, interval);
       // Ensure the process doesn't hang if this is the only active handle
@@ -229,21 +281,22 @@ export class Core {
 
   /**
    * Sends a Discovery Query (PTR) to the network.
-   * Used to find all devices of a specific type.
-   * @param serviceType - The service to scan for (default: "_services._dns-sd._udp.local").
+   *
+   * This is an "Active" scan. It sends a DNS query asking "Who has this service?".
+   * All devices on the network matching the type should respond.
+   *
+   * @param serviceType - The service to scan for. Default: `_services._dns-sd._udp.local` (Everything).
+   * Common types: `_googlecast._tcp.local`, `_airplay._tcp.local`.
    */
   public scan(serviceType: string = "_services._dns-sd._udp.local"): void {
     if (this.disableListener) {
       this.logger.warn("Cannot scan because listener is disabled.");
       return;
     }
-
-    // Ensure socket is bound (safe to call multiple times now)
+    // Ensure socket is bound
     this.listen();
 
     this.logger.info(`Scanning network for: ${serviceType}`);
-
-    // Create a Query for PTR records (Type 12)
     const packet = DNSBuffer.createQuery(serviceType, 12);
 
     this.socket.send(packet, 0, packet.length, MDNS_PORT, MDNS_IP, (err) => {
@@ -263,7 +316,13 @@ export class Core {
     // FIX: Return immediately if already listening to avoid "Socket already bound" errors
     if (this.isListening) return this.myEvent;
 
+    this.initSocket();
+
+    // 🔴 Reset error state before trying again this will remove all previous errors flag
+    this.error = false;
+
     this.__initListener(ref);
+
     if (this.error) {
       const errorMessage = `Error in MDNS listener! Report: ${NPM_URL}`;
       process.nextTick(() => this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage)));
@@ -285,8 +344,13 @@ export class Core {
 
       // Assume listening start success to prevent race conditions with immediate .scan() calls
       this.isListening = true;
-    } catch (e) {
-      this.isListening = false; // Revert state on sync error
+    } catch (e: any) {
+      // Handle race condition where socket binds between the check and the call
+      if (e.code === "ERR_SOCKET_ALREADY_BOUND") {
+        this.isListening = true;
+        return this.myEvent;
+      }
+      this.isListening = false;
       const errorMessage = `Failed to bind socket! Report: ${NPM_URL}`;
       this.logger.error(errorMessage, e);
     }
@@ -296,37 +360,30 @@ export class Core {
 
   /**
    * The raw 'message' handler for the UDP socket.
-   * Parses the binary DNS buffer into a structured object.
-   * @param msg - The raw Buffer received from the network.
+   *
+   * Parses the binary DNS buffer into a structured object using `DNSBuffer`.
+   * It extracts Questions, Answers, Authorities, and Additional records.
+   *
+   * @param msg - The raw binary Buffer received from the network.
    */
   private handleSocketMessage(msg: Buffer) {
     try {
       const parser = new DNSBuffer(msg);
-
-      // Parse Header SKIP ID AND FLAGS
-      /**
-       * ISSUE FIX:
-       * DNSBuffer moves a cursor sequentially through the raw bytes.
-       * By commenting out the id and flags reads, the cursor started at byte 0 instead of byte 4,
-       * causing qdCount to read the packet ID instead of the question count.
-       * Uncommenting those lines realigned the parser so it could correctly identify the Question, Answer, and Additional record counts.
-       */
+      // We read these fields to advance the internal cursor of the parser
       parser.readUInt16(); // ID
       parser.readUInt16(); // Flags
-      const qdCount = parser.readUInt16(); // Questions
-      const anCount = parser.readUInt16(); // Answers
-      const nsCount = parser.readUInt16(); // Authority (Capture this!)
-      const arCount = parser.readUInt16(); // Additional (Capture this!)
+      const qdCount = parser.readUInt16(); // Questions count
+      const anCount = parser.readUInt16(); // Answers count
+      const nsCount = parser.readUInt16(); // Authority count
+      const arCount = parser.readUInt16(); // Additional count
 
-      // Skip Questions
+      // Skip Questions section to get to Answers
       for (let i = 0; i < qdCount; i++) {
         parser.readName();
         parser.readUInt16();
         parser.readUInt16();
       }
 
-      // Read Answers + Authority + Additional
-      // FIX: Sum all record counts to ensure we read TXT records in the Additional section
       const answers: DeviceBuffer[] = [];
       const totalRecords = anCount + nsCount + arCount;
 
@@ -336,7 +393,6 @@ export class Core {
       }
 
       if (answers.length > 0) {
-        // Pass to logic orchestrator
         this.handleResponse({ answers } as any);
       }
     } catch (e) {
@@ -351,19 +407,15 @@ export class Core {
    */
   private handleResponse(response: { answers: Array<DeviceBuffer> }): void {
     if (!response.answers?.length) return;
-
     this.myEvent.emit(EmittedEvent.RAW_RESPONSE, response);
-
-    // 1. Handle targeted host lookups (legacy behavior: "Is 'MyDevice' online?")
     this.checkTargetedHosts(response.answers);
-
-    // 2. Handle general network scanning (Discovery: "What devices are here?")
     this.checkDiscovery(response.answers);
   }
 
   /**
    * Checks if any of the incoming answers match the specific hostnames
-   * provided in the constructor.
+   * provided in the constructor. Emits `RESPONSE` if a match is found.
+   *
    * @param answers - Array of parsed DNS records.
    */
   private checkTargetedHosts(answers: Array<DeviceBuffer>): void {
@@ -380,25 +432,22 @@ export class Core {
   /**
    * Helper: Determines if an answer is a TXT record (Type 16)
    * and matches one of the monitored hostnames.
-   * @param answer DeviceBuffer answer
    */
   private isMatchingTxtRecord(answer: DeviceBuffer): boolean {
     return answer.type === 16 && this.hostnames.some((hostname) => answer.name?.includes(hostname));
   }
 
   /**
-   * Helper: safeguards buffer conversion and maps the answer to a Device object.
-   * @param answer DeviceBuffer answer
+   * Helper: Safeguards buffer conversion and maps the answer to a Device object.
+   * Handles both Buffer and Array<Buffer> data types.
    */
   private convertToDevice(answer: DeviceBuffer): Device | null {
     let txtBuffer: Buffer | null = null;
-
     if (Buffer.isBuffer(answer.data)) {
       txtBuffer = answer.data;
     } else if (Array.isArray(answer.data)) {
       txtBuffer = Buffer.concat(answer.data);
     }
-
     if (!txtBuffer) return null;
 
     return {
@@ -410,19 +459,18 @@ export class Core {
 
   /**
    * Scans incoming answers for Discovery-related records (PTR, SRV, A).
-   * Emits a 'discovery' event for each relevant record found.
-   * @param answers - Array of parsed DNS records.
+   * Emits a `DISCOVERY` event for each relevant record found.
    */
   private checkDiscovery(answers: Array<DeviceBuffer>): void {
     for (const a of answers) {
       switch (a.type) {
-        case 12: // PTR (Pointer)
+        case 12:
           this.emitDiscovery(a, "PTR");
           break;
-        case 33: // SRV (Service)
+        case 33:
           this.emitDiscovery(a, "SRV");
           break;
-        case 1: // A (IPv4)
+        case 1:
           this.emitDiscovery(a, "A");
           break;
       }
@@ -431,8 +479,6 @@ export class Core {
 
   /**
    * Helper to normalize and emit discovery events.
-   * @param record - The parsed device buffer record.
-   * @param type - The standardized type string.
    */
   private emitDiscovery(record: DeviceBuffer, type: "PTR" | "SRV" | "A"): void {
     this.myEvent.emit(EmittedEvent.DISCOVERY, {
@@ -443,17 +489,38 @@ export class Core {
   }
 
   /**
-   * Stops the MDNS service.
-   * Closes the UDP socket and removes all event listeners.
+   * Stops the MDNS service completely.
+   *
+   * Actions taken:
+   * 1. Stops the heartbeat publisher timer.
+   * 2. Closes the UDP socket.
+   * 3. Removes all event listeners.
+   * 4. Resets internal state (`isListening = false`).
    */
   public stop(): void {
-    this.socket.close();
+    // 1. Stop the heartbeat timer!
+    if (this.publishTimer) {
+      clearInterval(this.publishTimer);
+      this.publishTimer = undefined;
+    }
+
+    // 2. Close socket
+    if (this.socket) {
+      try {
+        this.socket.close();
+      } catch {
+        this.logger.debug("Socket already closed");
+      }
+    }
+
+    // 3. Reset state
     this.myEvent.removeAllListeners();
-    this.isListening = false; // Reset listening state
+    this.isListening = false;
   }
 
   /**
-   * Proxy method to access the internal logger info level.
+   * Proxy method to access the internal logger's info level.
+   * Useful for external scripts to log using the same format.
    * @param args - Arguments to log.
    */
   public info(...args: any[]): void {

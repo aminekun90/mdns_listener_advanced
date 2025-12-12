@@ -7,10 +7,13 @@ const mdns = new Core([], null, {
   disableListener: false,
   disablePublisher: false,
 });
-
+mdns.info(`📢 Publishing ${ref}...`);
+mdns.publish(ref, { hello: "world" });
 // // 2. Start Listener
-const event = mdns.listen("MyDevice1\nMyDevice2");
+let event = mdns.listen();
+mdns.stop();
 
+event = mdns.listen("MyDevice1\nMyDevice2");
 // // --- HANDLERS ---
 
 event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
@@ -21,15 +24,9 @@ event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
 //   mdns.info(`🔎 Discovered [${device.type}]: ${device.name}`, device.data);
 // });
 
-// event.on(EmittedEvent.ERROR, (error: Error) => {
-//   mdns.info("❌ Error:", error.message);
-// });
-
-// --- ACTIONS (Immediate) ---
-
-// Publish immediately
-mdns.info(`📢 Publishing ${ref}...`);
-mdns.publish(ref, { hello: "world" });
+event.on(EmittedEvent.ERROR, (error: Error) => {
+  mdns.info("❌ Error:", error.message);
+});
 
 // Scan immediately (You can run multiple scans at once)
 // mdns.info("🚀 Scanning for ALL Services...");
