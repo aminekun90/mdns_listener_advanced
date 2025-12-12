@@ -68,6 +68,7 @@ New in v3.4.0: actively query the network to find devices (Printers, Chromecast,
 
 ```typescript
 import { Core, EmittedEvent, Device } from 'mdns-listener-advanced';
+// or import Core,{ EmittedEvent, Device } from 'mdns-listener-advanced';
 
 const mdns = new Core();
 const event = mdns.listen();
@@ -89,6 +90,7 @@ Announce your service to the network.
 
 ```javascript
 import { Core } from "mdns-listener-advanced";
+// or import Core,{ EmittedEvent, Device } from 'mdns-listener-advanced';
 
 const mdns = new Core();
 
@@ -96,6 +98,16 @@ const mdns = new Core();
 mdns.publish("MyCoolService", 30000); // 30000 ms = 30 seconds by default
 
 // Your device is now visible to other mDNS scanners!
+```
+
+### 4. Run the provided example
+
+Clone the repository and run the following command:
+
+```bash
+# optional install (no dependencies required to run the example)
+# yarn install
+yarn start
 ```
 
 ## API Documentation
