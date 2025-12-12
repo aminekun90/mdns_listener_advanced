@@ -100,10 +100,11 @@ export class Core {
   /**
    * Prepares the list of hostnames to listen for.
    * Reads from the file system or uses the provided list.
+   * @param ref - Optional string reference to specific hosts to listen for separated by newlines "\n".
    */
-  private __initListener(): void {
+  private __initListener(ref?: string): void {
     try {
-      const hostsRaw = this.__getHosts();
+      const hostsRaw = ref ?? this.__getHosts();
       this.hostnames = hostsRaw
         .split(/\r?\n/)
         .map((line) => line.replace(/#.*/, "").trim())
@@ -143,7 +144,7 @@ export class Core {
     }
 
     this.logger.warn(
-      "Hostnames or path to hostnames is not provided, listening to a host is compromised!",
+      "Hostnames or path to hostnames is not provided, listening to a host might be compromised!",
     );
     throw new Error(`Provide hostnames or path to hostnames! Report this error ${NPM_URL}`);
   }
@@ -177,7 +178,7 @@ export class Core {
    * @param name - The hostname/service name to publish.
    * @param interval - (Optional) Time in ms to repeat the broadcast (e.g., 30000). 0 = once.
    */
-  public publish(name: string, interval: number = 30000): void {
+  public publish(name: string, data: any = {}, interval: number = 30000): void {
     if (this.disablePublisher) {
       this.logger.info("Publisher is disabled.");
       return;
@@ -197,6 +198,7 @@ export class Core {
       const txtData = {
         uuid: uuid,
         ipv4: JSON.stringify(ip),
+        ...data,
       };
 
       const packet = DNSBuffer.createResponse(name, ip, txtData);
@@ -252,15 +254,16 @@ export class Core {
   /**
    * Binds the UDP socket to port 5353 and joins the multicast group.
    * Starts receiving mDNS packets.
+   * @param ref - (Optional) The hostname(s) to target separated by newlines "\n".
    * @returns The EventEmitter instance to listen for 'response' or 'discovery' events.
    */
-  public listen(): EventEmitter {
+  public listen(ref?: string): EventEmitter {
     if (this.disableListener) return this.myEvent;
 
     // FIX: Return immediately if already listening to avoid "Socket already bound" errors
     if (this.isListening) return this.myEvent;
 
-    this.__initListener();
+    this.__initListener(ref);
     if (this.error) {
       const errorMessage = `Error in MDNS listener! Report: ${NPM_URL}`;
       process.nextTick(() => this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage)));

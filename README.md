@@ -95,9 +95,36 @@ import { Core } from "mdns-listener-advanced";
 const mdns = new Core();
 
 // Publish "MyCoolService.local"
-mdns.publish("MyCoolService", 30000); // 30000 ms = 30 seconds by default
+const customData = { hello: "world" };
+mdns.publish("MyCoolService",customData, 30000); // 30000 ms = 30 seconds by default
 
 // Your device is now visible to other mDNS scanners!
+
+// // 2. Start Listener
+const event = mdns.listen();
+
+// // --- HANDLERS ---
+
+event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
+  mdns.info("✅ Found TARGETED Host:", found_hostnames);
+});
+// stop
+```
+
+output:
+
+```shell
+[MDNS ADVANCED] INFO: ✅ Found TARGETED Host: [
+  {
+    name: 'MyDevice2',
+    type: 'TXT',
+    data: {
+      uuid: '"eec91263-de12-4525-ba08-81adad17cebb"',
+      ipv4: '"192.168.1.102"',
+      hello: 'world'
+    }
+  }
+]
 ```
 
 ### 4. Run the provided example
@@ -133,7 +160,7 @@ new Core(hostsList, mdnsHostsPath, options, logger)
 | Method                  | Description                                                                                                                    |
 |-------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | listen()                | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter.                                                 |
-| publish(name, interval) | "Broadcasts an mDNS response, announcing name.local with your IP address. personalize the interval by default set to 30000ms." |
+| publish(name,data, interval) | "Broadcasts an mDNS response, announcing name.local with your IP address. add data to the TXT record, personalize the interval by default set to 30000ms." |
 | scan(serviceType)       | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local.                                       |
 | stop()                  | Closes the socket and removes all event listeners.                                                                             |
 
