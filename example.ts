@@ -35,7 +35,7 @@ event.on(EmittedEvent.ERROR, (error: Error) => {
 
 // --- GRACEFUL SHUTDOWN (Ctrl + C) ---
 process.on("SIGINT", () => {
-  mdns.info("\n🛑 Stopping mDNS Service...");
+  mdns.info("🛑 Stopping mDNS Service...");
 
   // This closes the socket and removes listeners
   mdns.stop();
