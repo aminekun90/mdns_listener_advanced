@@ -20,7 +20,7 @@ export class SimpleLogger {
       this.useColor = false;
     } else {
       // Safe Node.js check for "Are we in a terminal?"
-      this.useColor = !!process.stdout.isTTY;
+      this.useColor = Boolean(process.stdout.isTTY);
     }
   }
 

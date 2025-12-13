@@ -95,9 +95,36 @@ import { Core } from "mdns-listener-advanced";
 const mdns = new Core();
 
 // Publish "MyCoolService.local"
-mdns.publish("MyCoolService", 30000); // 30000 ms = 30 seconds by default
+const customData = { hello: "world" };
+mdns.publish("MyCoolService",customData, 30000); // 30000 ms = 30 seconds by default
 
 // Your device is now visible to other mDNS scanners!
+
+// // 2. Start Listener
+const event = mdns.listen();
+
+// // --- HANDLERS ---
+
+event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
+  mdns.info("✅ Found TARGETED Host:", found_hostnames);
+});
+// stop
+```
+
+output:
+
+```shell
+[MDNS ADVANCED] INFO: ✅ Found TARGETED Host: [
+  {
+    name: 'MyDevice2',
+    type: 'TXT',
+    data: {
+      uuid: '"eec91263-de12-4525-ba08-81adad17-ceb3"',
+      ipv4: '"192.168.1.102"',
+      hello: 'world'
+    }
+  }
+]
 ```
 
 ### 4. Run the provided example
@@ -130,12 +157,12 @@ new Core(hostsList, mdnsHostsPath, options, logger)
 
 ### Methods
 
-| Method                  | Description                                                                                                                    |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| listen()                | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter.                                                 |
-| publish(name, interval) | "Broadcasts an mDNS response, announcing name.local with your IP address. personalize the interval by default set to 30000ms." |
-| scan(serviceType)       | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local.                                       |
-| stop()                  | Closes the socket and removes all event listeners.                                                                             |
+| Method                       | Description                                                                                                                                                |
+|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| listen(ref)                  | Starts the UDP socket and joins the Multicast group. Returns the EventEmitter, you can provide a string to listen for a specific host check example.ts.    |
+| publish(name,data, interval) | "Broadcasts an mDNS response, announcing name.local with your IP address. add data to the TXT record, personalize the interval by default set to 30000ms." |
+| scan(serviceType)            | (New) Sends a query to the network. Default serviceType is _services._dns-sd._udp.local.                                                                   |
+| stop()                       | Closes the socket and removes all event listeners.                                                                                                         |
 
 ### Events (EmittedEvent)
 
@@ -172,7 +199,7 @@ If you do not provide a constructor list or this file, the listener will warn yo
 - Firewall: mDNS uses UDP port 5353. Ensure your firewall allows traffic on this port.
 - Docker: If running in Docker, you must use network_mode: "host" so the container can receive Multicast packets from the physical network.
 - Windows: You might need to allow Node.js through the Windows Defender Firewall on the first run.
-- MacOS + Docker limitations : running docker in host mode might not work on Mac-OS, since the container is not able to access the host network.
+- macOS + Docker limitations : running docker in host mode might not work on macOS, since the container is not able to access the host network.
 
 ## Support & Contribution
 
