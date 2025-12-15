@@ -327,10 +327,11 @@ export class Core {
 
     if (this.error) {
       const errorMessage = `Problem in MDNS listener! Report: ${NPM_URL}`;
-      this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage));
+      process.nextTick(() => {
+        this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage));
+      });
       return this.myEvent;
     }
-
     try {
       this.socket.bind(MDNS_PORT, () => {
         // Mark as listening inside the callback (or assuming success if no sync error)

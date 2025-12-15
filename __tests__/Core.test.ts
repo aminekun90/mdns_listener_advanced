@@ -42,7 +42,7 @@ const socketMock = {
   emit: vi.fn(),
   ref: vi.fn(),
   unref: vi.fn(),
-  address: vi.fn(() => ({ address: "0.0.0.0", port: 5353 })), // Added for initSocket check
+  address: vi.fn(() => ({ address: "0.0.0.0", port: 5353 })),
 };
 
 vi.mock("node:dgram", () => {
@@ -61,25 +61,24 @@ vi.mock("node:crypto", () => ({
 describe("Core", () => {
   let core: Core;
   let loggerMock: any;
-  // Capture handlers to trigger them manually
   let socketHandlers: { [key: string]: (msg: Buffer, rinfo?: any) => void } = {};
 
   beforeEach(() => {
     vi.clearAllMocks();
     socketHandlers = {};
 
-    // Capture socket event handlers when .on is called
+    // Capture socket event handlers
     (socketMock.on as Mock).mockImplementation((event, handler) => {
       socketHandlers[event] = handler;
       return socketMock;
     });
 
-    // Default socket bind success simulation
+    // Default socket bind success
     (socketMock.bind as Mock).mockImplementation((port, cb) => {
       if (cb) cb();
     });
 
-    // Default socket send success simulation
+    // Default socket send success
     (socketMock.send as Mock).mockImplementation((msg, off, len, port, addr, cb) => {
       if (cb) cb(null);
     });
@@ -151,20 +150,38 @@ describe("Core", () => {
       expect(loggerMock.info).toHaveBeenCalledWith("Looking for hostnames...", ["home-host"]);
     });
 
-    it("should throw error if no hosts found anywhere", async () => {
+    // UPDATED TEST: Now expects logs instead of a crash/error event
+    it("should log warning and debug if no hosts found (graceful fail)", async () => {
       vi.mocked(fs.existsSync).mockReturnValue(false);
 
       const emptyCore = new Core([], null, undefined, loggerMock);
-      const eventSpy = vi.fn();
 
-      const emitter = emptyCore.listen();
-      emitter.on(EmittedEvent.ERROR, eventSpy);
-      emitter.on("error", () => {}); // Safety net
+      emptyCore.listen();
 
+      expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringMatching(/not provided/));
+      // It should also debug log that hosts are empty
+      expect(loggerMock.debug).toHaveBeenCalledWith(expect.stringContaining("Hosts are empty"));
+    });
+
+    // NEW TEST: Verifies process.nextTick error emission
+    it("should emit ERROR event asynchronously via nextTick if initialization crashes", async () => {
+      // Simulate a crash in __initListener (e.g., readFileSync throws)
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockImplementation(() => {
+        throw new Error("FS Permission Denied");
+      });
+
+      const crashingCore = new Core(null, "/protected/file", undefined, loggerMock);
+      const emitter = crashingCore.listen();
+
+      const spyError = vi.fn();
+      emitter.on(EmittedEvent.ERROR, spyError);
+
+      // Wait for next tick to allow process.nextTick to fire
       await new Promise(process.nextTick);
 
-      expect(eventSpy).toHaveBeenCalledWith(expect.any(Error));
-      expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringMatching(/not provided/));
+      expect(spyError).toHaveBeenCalledWith(expect.any(Error));
+      expect(spyError.mock.calls[0][0].message).toContain("Problem in MDNS listener");
     });
   });
 
@@ -176,7 +193,7 @@ describe("Core", () => {
       expect(socketMock.setMulticastLoopback).toHaveBeenCalledWith(true);
     });
 
-    it("should emit error if socket binding fails", () => {
+    it("should log error if socket binding fails", () => {
       (socketMock.bind as Mock).mockImplementationOnce(() => {
         throw new Error("Bind failed");
       });
@@ -205,7 +222,7 @@ describe("Core", () => {
       });
 
       core.listen();
-      // Should not emit error event
+      // Should not log error, just continue
       expect(loggerMock.error).not.toHaveBeenCalled();
       // Should set listening to true
       expect((core as any).isListening).toBe(true);
@@ -344,14 +361,13 @@ describe("Core", () => {
       core.scan("_googlecast._tcp.local");
 
       expect(socketMock.send).toHaveBeenCalled();
-      // Check last call
+
       const calls = (socketMock.send as Mock).mock.calls;
-      const lastCall: any = calls.at(-1); // scan calls send
+      const lastCall: any = calls[calls.length - 1];
       const [buffer, , , port, ip] = lastCall;
 
       expect(port).toBe(5353);
       expect(ip).toBe("224.0.0.251");
-      // Basic check that buffer is generated (DNSBuffer implementation dependent)
       expect(buffer).toBeInstanceOf(Buffer);
       expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining("Scanning network for"));
     });
@@ -361,12 +377,6 @@ describe("Core", () => {
       core.scan();
       expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining("Cannot scan"));
     });
-
-    // Note: Testing reception of DISCOVERY events (PTR/SRV/A) strictly requires
-    // constructing binary DNS packets with those specific record types.
-    // Since we rely on the internal DNSBuffer to parse them, and creating
-    // complex binary mocks is brittle without the specific packet generator,
-    // we primarily verify the *sending* logic here.
   });
 
   describe("Cleanup", () => {
