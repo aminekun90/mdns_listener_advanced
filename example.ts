@@ -5,12 +5,10 @@ const ref = "MyDevice2";
 // 1. Initialize
 const mdns = new Core();
 mdns.info(`📢 Publishing ${ref}...`);
-mdns.publish(ref, { hello: "world" });
+mdns.publish(ref, { hello: "world" }, 2000);
 // // 2. Start Listener
-const event: EventEmitter = mdns.listen();
-mdns.stop();
+const event: EventEmitter = mdns.listen("MyDevice1\nMyDevice2");
 
-// mdns.listen("MyDevice1\nMyDevice2");
 // // --- HANDLERS ---
 
 event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
