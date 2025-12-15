@@ -27,7 +27,7 @@ interface Logger {
  * publishing and listening for services on the local network.
  *
  * It is designed to be:
- * - **Zero-Dependency:** Uses native Node.js modules (dgram, crypto, etc).
+ * - **Zero-Dependency:** Uses native Node.js modules (dgram, crypto, etc.).
  * - **Cross-Platform:** Compatible with Windows, macOS, and Linux.
  * - **Resilient:** Handles socket errors, re-binding, and resource cleanup.
  */
@@ -153,7 +153,8 @@ export class Core {
         .map((line) => line.replace(/#.*/, "").trim())
         .filter(Boolean);
       if (!this.hostnames.length) {
-        this.logger.warn("Hosts are empty");
+        this.logger.debug("init listener -> Hosts are empty or not provided");
+        return;
       }
     } catch (err) {
       this.debug(err as Error);
@@ -187,7 +188,8 @@ export class Core {
     this.logger.warn(
       "Hostnames or path to hostnames is not provided, listening to a host might be compromised!",
     );
-    throw new Error(`Provide hostnames or path to hostnames! Report this error ${NPM_URL}`);
+    return "";
+    // throw new Error(`Provide hostnames or path to hostnames! Report this error ${NPM_URL}`);
   }
 
   /**
@@ -324,8 +326,8 @@ export class Core {
     this.__initListener(ref);
 
     if (this.error) {
-      const errorMessage = `Error in MDNS listener! Report: ${NPM_URL}`;
-      process.nextTick(() => this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage)));
+      const errorMessage = `Problem in MDNS listener! Report: ${NPM_URL}`;
+      this.myEvent.emit(EmittedEvent.ERROR, new Error(errorMessage));
       return this.myEvent;
     }
 

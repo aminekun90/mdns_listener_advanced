@@ -3,18 +3,14 @@ import { EventEmitter } from "node:events";
 // check README examples
 const ref = "MyDevice2";
 // 1. Initialize
-const mdns = new Core([], null, {
-  debug: false,
-  disableListener: false,
-  disablePublisher: false,
-});
+const mdns = new Core();
 mdns.info(`📢 Publishing ${ref}...`);
 mdns.publish(ref, { hello: "world" });
 // // 2. Start Listener
 const event: EventEmitter = mdns.listen();
 mdns.stop();
 
-mdns.listen("MyDevice1\nMyDevice2");
+// mdns.listen("MyDevice1\nMyDevice2");
 // // --- HANDLERS ---
 
 event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
