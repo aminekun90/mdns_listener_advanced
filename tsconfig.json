@@ -30,7 +30,8 @@
   "include": [
     "src/**/*",
     "__tests__/**/*",
-    "./example.ts"
+    "./example.ts",
+    "./eslint.config.ts"
   ],
   "exclude": [
     "node_modules",
