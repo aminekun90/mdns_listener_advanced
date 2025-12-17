@@ -180,4 +180,11 @@ Thank you for helping improve this project 🚀
 
 Your contributions are genuinely appreciated.
 
+Thanks to [All Contributors](https://github.com/aminekun90/mdns-listener-advanced/graphs/contributors)
+
+Thanks to all Donators :
+
+- [**@aminekun90**](https://github.com/aminekun90)
+- ...TBD
+
 Have a great day!
