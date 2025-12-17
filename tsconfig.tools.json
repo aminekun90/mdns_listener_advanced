@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["eslint.config.ts", "tsup.config.ts", "commitlint.config.cjs"]
+}
