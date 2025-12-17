@@ -7,22 +7,26 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
+  // Ignore build output
   {
     ignores: ["node_modules/**", "dist/**", "build/**", "coverage/**"],
   },
 
+  // Base JS + TS rules
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
+  // Prettier
   prettierRecommended,
 
+  // Source files (TS + ESM)
   {
-    files: ["src/**/*.{ts,js}", "__tests__/**/*.{ts,js}"],
+    files: ["src/**/*.{ts,js}", "__tests__/**/*.{ts,js}", "**/*.{ts,js}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
       parserOptions: {
-        projectService: true,
+        project: "./tsconfig.*?.json",
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
@@ -39,9 +43,9 @@ export default defineConfig([
     },
   },
 
-  // ✅ Node CommonJS config files
+  // Node / CommonJS config files (NO TS parsing)
   {
-    files: ["commitlint.config.js", "*.config.js", "*.config.cjs"],
+    files: ["*.config.js", "*.config.cjs"],
     languageOptions: {
       sourceType: "commonjs",
       globals: {
@@ -50,6 +54,7 @@ export default defineConfig([
     },
   },
 
+  // Tests (Vitest)
   {
     files: ["__tests__/**/*.{ts,js}", "**/*.test.ts"],
     plugins: {
