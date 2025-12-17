@@ -105,4 +105,6 @@ lets celebrate our 70th tag/ 56th release with all these exciting changes 🎉
 
 ## Before v3.4.0
 
-Old library with bonjour and mdns dependencies if you want to use it check the old mdns-listener-advanced library [changes here](https://github.com/aminekun90/mdns_listener_advanced/releases)
+- Old library include bonjour and mdns dependencies if you want to use it check the old mdns-listener-advanced library [changes here](https://github.com/aminekun90/mdns_listener_advanced/releases)
+
+- Note : You can still use the old library from version 3.3.6 all versions bellow are not supported and deprected
