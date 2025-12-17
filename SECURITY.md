@@ -6,9 +6,8 @@ it's rocommanded to use the latest version of `mdns-listener-advanced` otherwise
 
 | Version | Supported?                               |
 | ------- | ---------------------------------------- |
-| > 3.3.0 | :white_check_mark: TypeScript transition |
-| = 3.0.0 | :white_check_mark: JS Stable version     |
-| < 2.4.7 | :x:                Not supported         |
+| > 3.3.5 | :white_check_mark: YES                   |
+| <= 3.3.5 | :x: Not supported                       |
 
 ## Reporting a Vulnerability or an issue
 
