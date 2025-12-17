@@ -5,7 +5,7 @@ This file contains a list of all the changes made to this project.
 ## v3.4.5
 
 - Fixed security issue with a vulnerability in vite
-- Updated Dev dependecies
+- Updated Dev dependencies
 - Add changelog.md file to track changes
 
 Miscellaneous : kept 0 prod dependencies Goal. 🎉
@@ -67,13 +67,13 @@ mdns.listen();
 
 ## v3.4.0 and v3.4.1
 
-This Release is a refining of the complete rewrite of the core architecture in 3.4.0. The library has moved from being a wrapper around external libraries to a Zero-Dependency, Native Node.js implementation using typescript.
+This Release is a refining of the complete rewrite of the core architecture in 3.4.0. The library has moved from being a wrapper around external libraries to a Zero-Dependency, Native Node.js implementation using TypeScript.
 
 ### Overview
 
 We have replaced bonjour-service and multicast-dns with a custom, lightweight DNS packet parser/encoder using native dgram sockets. This significantly reduces the bundle size, improves security, and gives us low-level control over the mDNS protocol.
 
-lets celebrate our 70th tag/ 56th release with all these exciting changes 🎉
+let celebrate our 70th tag/ 56th release with all these exciting changes 🎉
 
 ### ✨ Key Features
 
@@ -88,7 +88,7 @@ lets celebrate our 70th tag/ 56th release with all these exciting changes 🎉
     - PTR Records: Now follows Pointers to discover service instances.
     - A Records: improved IPv4 address extraction.
 
-3. New Event: EmittedEvent.DISCOVERY
+3. New Event: `EmittedEvent.DISCOVERY`
 
 - A new event type tailored for scanning results.
 - Returns a normalized Device object containing type (PTR/SRV/A) and parsed data.
@@ -107,4 +107,4 @@ lets celebrate our 70th tag/ 56th release with all these exciting changes 🎉
 
 - Old library include bonjour and mdns dependencies if you want to use it check the old mdns-listener-advanced library [changes here](https://github.com/aminekun90/mdns_listener_advanced/releases)
 
-- Note : You can still use the old library from version 3.3.6 all versions bellow are not supported and deprected
+- Note : You can still use the old library from version 3.3.6 all versions bellow are not supported and deprecated
