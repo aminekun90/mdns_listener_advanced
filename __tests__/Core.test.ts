@@ -1,4 +1,3 @@
-// src/Core.test.ts
 import { Core } from "@/Core.js";
 import { DNSBuffer } from "@/protocol/DNSBuffer.js";
 import { EmittedEvent } from "@/types.js";
