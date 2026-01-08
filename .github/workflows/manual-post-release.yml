@@ -27,7 +27,10 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: "22.x"
-
+            # REQUIRED for Yarn 4
+            - name: Enable Corepack 
+              run: corepack enable
+              
             - name: Get Version from package.json
               id: get_version
               run: |
@@ -68,7 +71,13 @@ jobs:
                   node-version: "22.x"
                   cache: "yarn"
                   registry-url: "https://registry.npmjs.org"
+            # REQUIRED for Yarn 4
+            - name: Enable Corepack 
+              run: corepack enable
 
+            # -----------------------------
+            #  Install & Build
+            # -----------------------------
             - name: Install & Build
               run: |
                   yarn install --frozen-lockfile
