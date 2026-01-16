@@ -206,9 +206,11 @@ If you do not provide a constructor list or this file, the listener will warn yo
 Issues: [Open an issue here](https://github.com/aminekun90/mdns_listener_advanced/issues)
 Contact: [Connect on LinkedIn](https://www.linkedin.com/in/amine-bouzahar/)
 
-### Buy me a coffee :coffee:
+### If you appreciate mdns-listener-advanced, consider supporting the project. :coffee:
 
-If this library saved you time, consider supporting the project!
+I dedicate time and effort on writing and maintaining this library since 2017 and I'm grateful for your support.
+
+If this library saved you time, consider Donating!
 
 [![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/aminebouzahar)
 
