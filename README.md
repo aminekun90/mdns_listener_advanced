@@ -17,6 +17,7 @@ Compatible with mdns, Avahi, Bonjour, and Zeroconf.
 - **Node.js:** v22 or later (Recommended).
 - **OS:** Fully tested on Windows 11, Ubuntu 20.04+, and macOS (Sonoma/Sequoia/Tahoe).
 - Not tested on Docker containers.
+- This library need to access the local network to work properly.
 
 ## Installation
 
