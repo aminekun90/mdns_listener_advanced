@@ -1,49 +1,38 @@
 {
   "compilerOptions": {
-    "target": "ES2022", // Modern JS target
-    "module": "NodeNext", // ESM support
-    "moduleResolution": "NodeNext", // Required for Node ESM
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "outDir": "dist",
-    "declaration": true, // Generate .d.ts files
-    "declarationMap": true, // Optional: map for debugging types
-    "sourceMap": true, // Map for debugging JS
-    "strict": true, // Enable all strict checks
-    "esModuleInterop": true, // Default interop with commonjs
+    "rootDir": ".",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true, // Skip type checks of node_modules
+    "skipLibCheck": true,
     "resolveJsonModule": true,
     "noImplicitAny": true,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
-    "types": [
-      "node",
-      "vitest/globals"
-    ],
-    "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types"],
+    /* REPLACED: Removed vitest to stop TS2688 */
+    "types": ["node"], 
     "paths": {
-      "@/*": [
-        "src/*"
-      ] // Alias for imports
+      "@/*": ["./src/*"]
     }
   },
   "include": [
     "src/**/*",
-    "__tests__/**/*",
-    "./example.ts",
-    "./eslint.config.ts"
+    "env.d.ts" 
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "build",
-    "coverage",
-    "esm",
-    "cjs",
-    "umd",
-    "types",
-    "*.log",
-    ".env",
-    "tools"
+    "__tests__",
+    "example.ts",
+    "eslint.config.ts"
   ]
 }
