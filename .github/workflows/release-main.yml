@@ -36,11 +36,20 @@ jobs:
         with:
           node-version: "22.x"
           cache: "yarn"
-          registry-url: "https://registry.npmjs.org"
 
-      - name: ⬆️ Ensure Latest npm (>= 11.5.1) # CRITICAL Required for OIDC
+      - name: ⬆️ Check & Update npm if needed
         run: |
-          npm install -g npm@^11.5.1
+          CURRENT_NPM=$(npm -v)
+          REQUIRED_NPM="11.12.1"
+          
+          # Comparaison de version sémantique simple
+          if [ "$(printf '%s\n' "$REQUIRED_NPM" "$CURRENT_NPM" | sort -V | head -n1)" != "$REQUIRED_NPM" ]; then
+            echo "current npm ($CURRENT_NPM) is older than $REQUIRED_NPM. Updating..."
+            corepack enable
+            corepack prepare npm@$REQUIRED_NPM --activate
+          else
+            echo "npm is already up to date ($CURRENT_NPM)."
+          fi
           npm --version
 
       # 1. Determine Version
