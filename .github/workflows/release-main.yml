@@ -31,26 +31,30 @@ jobs:
       - name: Enable Corepack 
         run: corepack enable
 
-      - name: ⚙️ Setup Node.js
+      - name: ⚙️ Setup Node.js (Node 24)
         uses: actions/setup-node@v6
         with:
-          node-version: "22.x"
+          # Utilise "24" pour avoir la dernière version stable de 2026
+          node-version: "24" 
           cache: "yarn"
+          registry-url: "https://registry.npmjs.org"
 
       - name: ⬆️ Check & Update npm if needed
         run: |
           CURRENT_NPM=$(npm -v)
           REQUIRED_NPM="11.12.1"
           
-          # Comparaison de version sémantique simple
           if [ "$(printf '%s\n' "$REQUIRED_NPM" "$CURRENT_NPM" | sort -V | head -n1)" != "$REQUIRED_NPM" ]; then
-            echo "current npm ($CURRENT_NPM) is older than $REQUIRED_NPM. Updating..."
+            echo "Current npm ($CURRENT_NPM) is older than $REQUIRED_NPM. Updating..."
             corepack enable
             corepack prepare npm@$REQUIRED_NPM --activate
+            # On force le rechargement pour que la suite du job voit le nouveau npm
+            echo "NPM_CONFIG_USERCONFIG=$NPM_CONFIG_USERCONFIG" >> $GITHUB_ENV
+            hash -r
           else
-            echo "npm is already up to date ($CURRENT_NPM)."
+            echo "npm is up to date ($CURRENT_NPM)."
           fi
-          npm --version
+          echo "Final versions: Node $(node -v) / npm $(npm -v)"
 
       # 1. Determine Version
       - name: 🆔 Get Package Info
