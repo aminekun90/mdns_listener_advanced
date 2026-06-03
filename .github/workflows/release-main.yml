@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 3.4.8) - Leave empty to use package.json'
+        description: "Version to publish (e.g. 4.0.0) — leave empty to use package.json"
         required: false
         type: string
 
@@ -12,52 +12,38 @@ permissions:
   contents: write
   packages: write
   issues: write
-  id-token: write # REQUIRED for OIDC
+  id-token: write # required for npm OIDC provenance
 
 jobs:
   release:
-    name: 🚀 Build, Audit & Release
+    name: Build, Test, Audit & Release
     runs-on: ubuntu-latest
-    
-    # Matches your NPM settings "npm-publish" for OIDC
+
     environment:
       name: npm-publish
 
     steps:
-      - name: ⬇️ Checkout Repo
-        uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # REQUIRED for Yarn 4
-      - name: Enable Corepack 
+      - name: Enable Corepack (required for Yarn 4)
         run: corepack enable
 
-      - name: ⚙️ Setup Node.js (Node 24)
-        uses: actions/setup-node@v6
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
         with:
-          # Utilise "24" pour avoir la dernière version stable de 2026
-          node-version: "24" 
+          node-version: "24"
           cache: "yarn"
           registry-url: "https://registry.npmjs.org"
 
-      - name: ⬆️ Check & Update npm if needed
+      - name: Print runtime versions
         run: |
-          CURRENT_NPM=$(npm -v)
-          REQUIRED_NPM="11.12.1"
-          
-          if [ "$(printf '%s\n' "$REQUIRED_NPM" "$CURRENT_NPM" | sort -V | head -n1)" != "$REQUIRED_NPM" ]; then
-            echo "Current npm ($CURRENT_NPM) is older than $REQUIRED_NPM. Updating..."
-            corepack enable
-            corepack prepare npm@$REQUIRED_NPM --activate
-            # On force le rechargement pour que la suite du job voit le nouveau npm
-            echo "NPM_CONFIG_USERCONFIG=$NPM_CONFIG_USERCONFIG" >> $GITHUB_ENV
-            hash -r
-          else
-            echo "npm is up to date ($CURRENT_NPM)."
-          fi
-          echo "Final versions: Node $(node -v) / npm $(npm -v)"
+          node --version
+          npm --version
+          yarn --version
 
-      # 1. Determine Version
-      - name: 🆔 Get Package Info
+      # 1. Resolve version
+      - name: Resolve target version
         id: package
         run: |
           if [ -n "${{ inputs.version }}" ]; then
@@ -66,37 +52,42 @@ jobs:
             VERSION=$(node -p "require('./package.json').version")
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Target Version: $VERSION"
+          echo "Target version: $VERSION"
 
       # 2. Install & Build
-      - name: 🛠️ Install & Build
-        run: |
-          # Yarn 4 uses --immutable instead of --frozen-lockfile
-          yarn install --immutable
-          yarn build
+      - name: Install dependencies
+        run: yarn install --immutable
 
-      # 3. Security Audit (Shai-Hulud)
-      - name: 🛡️ Run Shai-Hulud Audit
+      - name: Build package
+        run: yarn build
+
+      # 3. Test — must pass before any publish step
+      - name: Run tests
+        run: yarn test
+
+      # 4. Security audit
+      - name: Run Shai-Hulud security audit
         shell: bash
         run: |
           chmod +x ./shai-hulud-audit.sh
           ./shai-hulud-audit.sh --no-color --save-report || true
 
-      - name: 📤 Upload Audit Logs
+      - name: Upload audit report
         uses: actions/upload-artifact@v4
         with:
           name: shai-hulud-audit-${{ github.run_number }}
           path: "*.log"
           retention-days: 7
 
-      # 4. Publish to Public NPM
-      # --ignore-scripts: Prevents Husky/Yarn lifecycle scripts from interfering with npm publish
-      # --provenance: Enables OIDC security
-      - name: 🚀 Publish to NPM
+      # 5. Publish to npm (OIDC provenance)
+      # --ignore-scripts prevents Husky / Yarn lifecycle hooks from interfering
+      - name: Publish to npm
         run: npm publish --provenance --access public --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # 5. Create GitHub Release
-      - name: 🏷️ Create GitHub Release
+      # 6. Create GitHub Release
+      - name: Create GitHub Release
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -107,8 +98,8 @@ jobs:
             --generate-notes \
             --target "main"
 
-      # 6. Publish to GitHub Packages
-      - name: 📦 Publish to GitHub Packages
+      # 7. Publish to GitHub Packages (scoped name)
+      - name: Publish to GitHub Packages
         if: success()
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

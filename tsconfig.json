@@ -18,15 +18,14 @@
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,
     "typeRoots": ["./node_modules/@types"],
-    /* REPLACED: Removed vitest to stop TS2688 */
-    "types": ["node"], 
+    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": [
     "src/**/*",
-    "env.d.ts" 
+    "env.d.ts"
   ],
   "exclude": [
     "node_modules",

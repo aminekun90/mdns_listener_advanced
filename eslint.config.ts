@@ -1,7 +1,7 @@
 // eslint.config.js
 import js from "@eslint/js";
 import prettierRecommended from "eslint-plugin-prettier/recommended";
-import vitest from "eslint-plugin-vitest";
+import vitest from "@vitest/eslint-plugin";
 import { defineConfig } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
