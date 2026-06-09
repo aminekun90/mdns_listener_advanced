@@ -91,5 +91,8 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "packageManager": "yarn@4.13.0"
+  "packageManager": "yarn@4.13.0",
+  "resolutions": {
+    "fast-uri": "^4.0.0"
+  }
 }
