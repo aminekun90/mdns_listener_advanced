@@ -1,231 +1,299 @@
-import { DNSBuffer } from "@/protocol/DNSBuffer.js"; // Adjust path if needed
+import { DNSBuffer } from "@/protocol/DNSBuffer.js";
 import { describe, expect, it } from "vitest";
 
 describe("DNSBuffer", () => {
-  // --- Constructor & Basic properties ---
-  it("should initialize with an empty buffer if none provided", () => {
-    const dns = new DNSBuffer();
-    expect(dns.isDone).toBe(true);
+  // ─── Constructor ────────────────────────────────────────────────────────
+
+  it("should initialize as done when no buffer is provided", () => {
+    expect(new DNSBuffer().isDone).toBe(true);
   });
 
-  it("should initialize with a provided buffer", () => {
-    const buf = Buffer.from([0x01]);
-    const dns = new DNSBuffer(buf);
-    expect(dns.isDone).toBe(false);
+  it("should initialize as not done when a buffer is provided", () => {
+    expect(new DNSBuffer(Buffer.from([0x01])).isDone).toBe(false);
   });
 
-  // --- Readers ---
+  // ─── readUInt16 ─────────────────────────────────────────────────────────
+
   describe("readUInt16", () => {
-    it("should read a 16-bit unsigned integer", () => {
-      // 0x0102 = 258
-      const buf = Buffer.from([0x01, 0x02]);
+    it("reads a big-endian 16-bit unsigned integer and advances the cursor", () => {
+      const dns = new DNSBuffer(Buffer.from([0x01, 0x02]));
+      expect(dns.readUInt16()).toBe(258); // 0x0102
+      expect(dns.isDone).toBe(true);
+    });
+
+    it("reads consecutive values from a buffer", () => {
+      const dns = new DNSBuffer(Buffer.from([0x00, 0x01, 0x00, 0x02]));
+      expect(dns.readUInt16()).toBe(1);
+      expect(dns.readUInt16()).toBe(2);
+    });
+  });
+
+  // ─── readName ───────────────────────────────────────────────────────────
+
+  describe("readName", () => {
+    it("decodes a simple domain name", () => {
+      const dns = new DNSBuffer(DNSBuffer.encodeName("www.google.com"));
+      expect(dns.readName()).toBe("www.google.com");
+    });
+
+    it("returns an empty string for the DNS root (0x00)", () => {
+      const dns = new DNSBuffer(Buffer.from([0x00]));
+      expect(dns.readName()).toBe("");
+    });
+
+    it("follows DNS compression pointers", () => {
+      // Buffer layout:
+      //  Offset 0–7: "google\0"   (6 g o o g l e + null)
+      //  Offset 8–13: "www" + pointer to offset 0
+      const part1 = Buffer.from([0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x00]);
+      const part2 = Buffer.from([0x03, 0x77, 0x77, 0x77, 0xc0, 0x00]);
+      const buf = Buffer.concat([part1, part2]);
       const dns = new DNSBuffer(buf);
-      expect(dns.readUInt16()).toBe(258);
+
+      expect(dns.readName()).toBe("google");
+      expect(dns.readName()).toBe("www.google");
+    });
+
+    it("advances cursor past the name on each call", () => {
+      const name1 = DNSBuffer.encodeName("a.local");
+      const name2 = DNSBuffer.encodeName("b.local");
+      const dns = new DNSBuffer(Buffer.concat([name1, name2]));
+
+      expect(dns.readName()).toBe("a.local");
+      expect(dns.readName()).toBe("b.local");
       expect(dns.isDone).toBe(true);
     });
   });
 
-  describe("readName", () => {
-    it("should read a simple domain name", () => {
-      // 3 'w' 'w' 'w' 6 'g' 'o' 'o' 'g' 'l' 'e' 3 'c' 'o' 'm' 0
-      const buf = DNSBuffer.encodeName("www.google.com");
-      const dns = new DNSBuffer(buf);
-      expect(dns.readName()).toBe("www.google.com");
-    });
+  // ─── readAnswer ─────────────────────────────────────────────────────────
 
-    it("should handle DNS compression pointers", () => {
-      // Construct a buffer with a pointer
-      // Offset 0: "google" (6 g o o g l e) + null (0)
-      // Offset 8: "www" (3 w w w) + Pointer to 0 (0xC0 0x00)
-
-      const part1 = Buffer.from([0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x00]); // "google."
-      const part2 = Buffer.from([0x03, 0x77, 0x77, 0x77, 0xc0, 0x00]); // "www" -> pointer to 0
-
-      const buf = Buffer.concat([part1, part2]);
-      const dns = new DNSBuffer(buf);
-
-      // Read first name (google) to advance offset? No, we want to skip to offset 8 manually
-      // or just read two names.
-      // Let's read the first one "google"
-      expect(dns.readName()).toBe("google");
-
-      // Now read the second one "www.google" (which uses the pointer)
-      expect(dns.readName()).toBe("www.google");
-    });
-
-    it("should handle empty/root name", () => {
-      const buf = Buffer.from([0x00]);
-      const dns = new DNSBuffer(buf);
-      expect(dns.readName()).toBe("");
-    });
-  });
-
-  // --- readAnswer (The Complex Logic) ---
   describe("readAnswer", () => {
-    it("should parse Type 1 (A Record / IPv4)", () => {
-      // Header + 4 bytes IP (192.168.1.1)
-      //   const header = createAnswerHeader(1, 4);
-      //   const ip = Buffer.from([192, 168, 1, 1]);
-
-      // We need a valid name at offset 0xC00C (12) for the parser to work?
-      // Actually readAnswer calls readName() first.
-      // Let's make it simpler: explicit simple name at start.
-
+    function makeRecord(type: number, rdataLen: number, rdata: Buffer): Buffer {
       const name = DNSBuffer.encodeName("test.local");
-      const rest = Buffer.alloc(10); // Type(2) Class(2) TTL(4) Len(2)
-      rest.writeUInt16BE(1, 0); // Type A
-      rest.writeUInt16BE(1, 2); // Class
-      rest.writeUInt32BE(100, 4); // TTL
-      rest.writeUInt16BE(4, 8); // Len 4
+      const header = Buffer.alloc(10);
+      header.writeUInt16BE(type, 0);   // Type
+      header.writeUInt16BE(1, 2);      // Class IN
+      header.writeUInt32BE(100, 4);    // TTL
+      header.writeUInt16BE(rdataLen, 8);
+      return Buffer.concat([name, header, rdata]);
+    }
 
-      const ipData = Buffer.from([10, 0, 0, 5]);
-
-      const buf = Buffer.concat([name, rest, ipData]);
-      const dns = new DNSBuffer(buf);
-
-      const ans = dns.readAnswer();
-      expect(ans.name).toBe("test.local");
+    it("parses Type 1 (A) records as dotted-decimal IPv4", () => {
+      const buf = makeRecord(1, 4, Buffer.from([10, 0, 0, 5]));
+      const ans = new DNSBuffer(buf).readAnswer();
       expect(ans.type).toBe(1);
       expect(ans.data).toBe("10.0.0.5");
     });
 
-    it("should parse Type 16 (TXT Record)", () => {
-      const name = DNSBuffer.encodeName("txt.local");
-      const rest = Buffer.alloc(10);
-      rest.writeUInt16BE(16, 0); // Type TXT
-      rest.writeUInt16BE(1, 2); // Class
-      rest.writeUInt32BE(100, 4); // TTL
+    it("parses Type 28 (AAAA) records as colon-separated hex IPv6", () => {
+      const ipv6Bytes = Buffer.alloc(16);
+      // 2001:0db8:85a3:0000:0000:8a2e:0370:7334
+      const groups = [0x2001, 0x0db8, 0x85a3, 0x0000, 0x0000, 0x8a2e, 0x0370, 0x7334];
+      groups.forEach((g, i) => ipv6Bytes.writeUInt16BE(g, i * 2));
 
-      const txtContent = Buffer.from("hello=world");
-      rest.writeUInt16BE(txtContent.length, 8); // Len
-
-      const buf = Buffer.concat([name, rest, txtContent]);
-      const dns = new DNSBuffer(buf);
-
-      const ans = dns.readAnswer();
-      expect(ans.type).toBe(16);
-      expect(Array.isArray(ans.data)).toBe(true);
-      expect(ans.data[0].toString()).toBe("hello=world");
+      const buf = makeRecord(28, 16, ipv6Bytes);
+      const ans = new DNSBuffer(buf).readAnswer();
+      expect(ans.type).toBe(28);
+      expect(ans.data).toBe("2001:0db8:85a3:0000:0000:8a2e:0370:7334");
     });
 
-    it("should parse Type 12 (PTR Record)", () => {
-      const name = DNSBuffer.encodeName("ptr.local");
-      const rest = Buffer.alloc(10);
-      rest.writeUInt16BE(12, 0); // Type PTR
-      rest.writeUInt16BE(1, 2);
-      rest.writeUInt32BE(100, 4);
+    it("parses Type 28 (AAAA) loopback address", () => {
+      const loopback = Buffer.alloc(16);
+      loopback.writeUInt16BE(0x0001, 14); // ::1
+      const buf = makeRecord(28, 16, loopback);
+      const ans = new DNSBuffer(buf).readAnswer();
+      expect(ans.data).toBe("0000:0000:0000:0000:0000:0000:0000:0001");
+    });
 
-      const targetName = DNSBuffer.encodeName("target.local");
-      rest.writeUInt16BE(targetName.length, 8); // Len
+    it("parses Type 16 (TXT) records as a Buffer array", () => {
+      const txt = Buffer.from("hello=world");
+      const buf = makeRecord(16, txt.length, txt);
+      const ans = new DNSBuffer(buf).readAnswer();
+      expect(ans.type).toBe(16);
+      expect(Array.isArray(ans.data)).toBe(true);
+      expect((ans.data as Buffer[])[0].toString()).toBe("hello=world");
+    });
 
-      const buf = Buffer.concat([name, rest, targetName]);
-      const dns = new DNSBuffer(buf);
-
-      const ans = dns.readAnswer();
+    it("parses Type 12 (PTR) records as a domain name string", () => {
+      const target = DNSBuffer.encodeName("target.local");
+      const buf = makeRecord(12, target.length, target);
+      const ans = new DNSBuffer(buf).readAnswer();
       expect(ans.type).toBe(12);
       expect(ans.data).toBe("target.local");
     });
 
-    it("should parse Type 33 (SRV Record)", () => {
-      const name = DNSBuffer.encodeName("srv.local");
-      const rest = Buffer.alloc(10);
-      rest.writeUInt16BE(33, 0); // Type SRV
-      rest.writeUInt16BE(1, 2);
-      rest.writeUInt32BE(100, 4);
+    it("parses Type 33 (SRV) records with priority, weight, port, and target", () => {
+      const target = DNSBuffer.encodeName("srv-target.local");
+      const srvPrefix = Buffer.alloc(6);
+      srvPrefix.writeUInt16BE(10, 0);   // priority
+      srvPrefix.writeUInt16BE(20, 2);   // weight
+      srvPrefix.writeUInt16BE(8080, 4); // port
+      const rdata = Buffer.concat([srvPrefix, target]);
 
-      const targetName = DNSBuffer.encodeName("target.local");
-      const srvData = Buffer.alloc(6);
-      srvData.writeUInt16BE(10, 0); // Priority
-      srvData.writeUInt16BE(20, 2); // Weight
-      srvData.writeUInt16BE(8080, 4); // Port
-
-      // Total Data Length = 6 + name length
-      rest.writeUInt16BE(6 + targetName.length, 8);
-
-      const buf = Buffer.concat([name, rest, srvData, targetName]);
-      const dns = new DNSBuffer(buf);
-
-      const ans = dns.readAnswer();
+      const buf = makeRecord(33, rdata.length, rdata);
+      const ans = new DNSBuffer(buf).readAnswer();
       expect(ans.type).toBe(33);
-      expect(ans.data).toEqual({
-        priority: 10,
-        weight: 20,
-        port: 8080,
-        target: "target.local",
-      });
+      expect(ans.data).toEqual({ priority: 10, weight: 20, port: 8080, target: "srv-target.local" });
     });
 
-    it("should safely skip Unknown Types", () => {
-      const name = DNSBuffer.encodeName("unknown.local");
-      const rest = Buffer.alloc(10);
-      rest.writeUInt16BE(999, 0); // Type 999 (Unknown)
-      rest.writeUInt16BE(1, 2);
-      rest.writeUInt32BE(100, 4);
-
-      const garbageData = Buffer.from([0xaa, 0xbb, 0xcc]);
-      rest.writeUInt16BE(garbageData.length, 8); // Len
-
-      const buf = Buffer.concat([name, rest, garbageData]);
-      const dns = new DNSBuffer(buf);
-
-      const ans = dns.readAnswer();
+    it("skips and returns null for unknown record types", () => {
+      const garbage = Buffer.from([0xaa, 0xbb, 0xcc]);
+      const buf = makeRecord(999, garbage.length, garbage);
+      const ans = new DNSBuffer(buf).readAnswer();
       expect(ans.type).toBe(999);
-      expect(ans.data).toBe(null); // Unknown type returns null data
-      expect(dns.isDone).toBe(true); // Should have skipped garbage data
+      expect(ans.data).toBeNull();
+      expect(new DNSBuffer(buf).readAnswer(), "cursor should be past the record").toBeDefined();
+    });
+
+    it("exposes the correct TTL from the wire format", () => {
+      const name = DNSBuffer.encodeName("ttl-test.local");
+      const header = Buffer.alloc(10);
+      header.writeUInt16BE(1, 0);
+      header.writeUInt16BE(1, 2);
+      header.writeUInt32BE(300, 4); // TTL = 300
+      header.writeUInt16BE(4, 8);
+      const buf = Buffer.concat([name, header, Buffer.from([1, 2, 3, 4])]);
+      expect(new DNSBuffer(buf).readAnswer().ttl).toBe(300);
     });
   });
 
-  // --- Static Writers ---
+  // ─── createQuery ────────────────────────────────────────────────────────
+
   describe("createQuery", () => {
-    it("should create a valid DNS Query packet", () => {
+    it("creates a well-formed DNS Query packet", () => {
       const buf = DNSBuffer.createQuery("test.local", 12);
 
-      // Header is 12 bytes
-      expect(buf.readUInt16BE(0)).toBe(0); // ID
-      expect(buf.readUInt16BE(2)).toBe(0); // Flags
-      expect(buf.readUInt16BE(4)).toBe(1); // QDCOUNT (1)
+      // Header checks
+      expect(buf.readUInt16BE(0)).toBe(0);    // ID
+      expect(buf.readUInt16BE(2)).toBe(0);    // Flags (Query)
+      expect(buf.readUInt16BE(4)).toBe(1);    // QDCOUNT = 1
+      expect(buf.readUInt16BE(6)).toBe(0);    // ANCOUNT
+      expect(buf.readUInt16BE(8)).toBe(0);    // NSCOUNT
+      expect(buf.readUInt16BE(10)).toBe(0);   // ARCOUNT
 
-      // Check Name (12 is offset of header)
-      // "test.local" -> 4test5local0
-      expect(buf.readUInt8(12)).toBe(4); // 'test' length
+      // Question QTYPE and QCLASS
+      const qOffset = 12 + DNSBuffer.encodeName("test.local").length;
+      expect(buf.readUInt16BE(qOffset)).toBe(12); // PTR
+      expect(buf.readUInt16BE(qOffset + 2)).toBe(1); // IN
+    });
 
-      // Check Footer (Type + Class)
-      // Header(12) + Name(4+1+5+1+1 = 12) = 24 offset
-      const typeOffset = 12 + 12;
-      expect(buf.readUInt16BE(typeOffset)).toBe(12); // Type PTR
-      expect(buf.readUInt16BE(typeOffset + 2)).toBe(1); // Class IN
+    it("encodes the service type in the question section", () => {
+      const buf = DNSBuffer.createQuery("_http._tcp.local", 255);
+      const dns = new DNSBuffer(buf);
+      // Skip 12-byte header
+      for (let i = 0; i < 6; i++) dns.readUInt16();
+      expect(dns.readName()).toBe("_http._tcp.local");
     });
   });
 
-  describe("createResponse", () => {
-    it("should create a valid DNS Response packet", () => {
-      const buf = DNSBuffer.createResponse("dev.local", "1.2.3.4", { key: "val" });
+  // ─── createResponse ─────────────────────────────────────────────────────
 
+  describe("createResponse", () => {
+    it("creates a valid DNS Response with A and TXT records", () => {
+      const buf = DNSBuffer.createResponse("dev.local", "1.2.3.4", { key: "val" });
       const dns = new DNSBuffer(buf);
 
-      // 1. Read Header
       dns.readUInt16(); // ID
-      const flags = dns.readUInt16();
-      expect(flags).toBe(0x8400); // Response + Authoritative
-
+      expect(dns.readUInt16()).toBe(0x8400); // Flags
       dns.readUInt16(); // QD
-      const anCount = dns.readUInt16();
-      expect(anCount).toBe(2); // A + TXT
+      expect(dns.readUInt16()).toBe(2);       // AN (A + TXT)
+      dns.readUInt16(); dns.readUInt16();     // NS, AR
 
-      dns.readUInt16(); // NS
-      dns.readUInt16(); // AR
+      const a = dns.readAnswer();
+      expect(a.name).toBe("dev.local");
+      expect(a.type).toBe(1);
+      expect(a.data).toBe("1.2.3.4");
+      expect(a.ttl).toBe(120); // default TTL
 
-      // 2. Read Answer 1 (A Record)
-      const ans1 = dns.readAnswer();
-      expect(ans1.name).toBe("dev.local");
-      expect(ans1.type).toBe(1);
-      expect(ans1.data).toBe("1.2.3.4");
+      const txt = dns.readAnswer();
+      expect(txt.name).toBe("dev.local");
+      expect(txt.type).toBe(16);
+      expect((txt.data as Buffer[])[0].toString()).toContain("key=val");
+    });
 
-      // 3. Read Answer 2 (TXT Record)
-      const ans2 = dns.readAnswer();
-      expect(ans2.name).toBe("dev.local");
-      expect(ans2.type).toBe(16);
-      expect(ans2.data[0].toString()).toContain("key=val");
+    it("applies a custom TTL to both A and TXT records", () => {
+      const buf = DNSBuffer.createResponse("dev.local", "10.0.0.1", {}, 300);
+      const dns = new DNSBuffer(buf);
+      for (let i = 0; i < 6; i++) dns.readUInt16(); // skip header
+
+      const a = dns.readAnswer();
+      expect(a.ttl).toBe(300);
+
+      const txt = dns.readAnswer();
+      expect(txt.ttl).toBe(300);
+    });
+
+    it("round-trips: the packet it creates can be parsed back correctly", () => {
+      const packet = DNSBuffer.createResponse(
+        "roundtrip.local",
+        "192.168.99.1",
+        { version: "1.0", env: "test" },
+        60,
+      );
+
+      const dns = new DNSBuffer(packet);
+      for (let i = 0; i < 6; i++) dns.readUInt16(); // skip 12-byte header
+
+      const a = dns.readAnswer();
+      expect(a.name).toBe("roundtrip.local");
+      expect(a.data).toBe("192.168.99.1");
+      expect(a.ttl).toBe(60);
+
+      const txt = dns.readAnswer();
+      expect(txt.ttl).toBe(60);
+      const txtStr = (txt.data as Buffer[])[0].toString();
+      expect(txtStr).toContain("version=1.0");
+    });
+  });
+
+  // ─── createGoodbye ──────────────────────────────────────────────────────
+
+  describe("createGoodbye", () => {
+    it("creates a packet with TTL = 0 on both A and TXT records", () => {
+      const buf = DNSBuffer.createGoodbye("byebye.local", "10.0.0.1");
+      const dns = new DNSBuffer(buf);
+      for (let i = 0; i < 6; i++) dns.readUInt16(); // skip header
+
+      const a = dns.readAnswer();
+      expect(a.ttl).toBe(0);
+
+      const txt = dns.readAnswer();
+      expect(txt.ttl).toBe(0);
+    });
+
+    it("sets the authoritative-answer response flag", () => {
+      const buf = DNSBuffer.createGoodbye("byebye.local", "10.0.0.1");
+      expect(buf.readUInt16BE(2)).toBe(0x8400);
+    });
+
+    it("encodes the correct hostname in the goodbye packet", () => {
+      const buf = DNSBuffer.createGoodbye("mydevice.local", "1.2.3.4");
+      const dns = new DNSBuffer(buf);
+      for (let i = 0; i < 6; i++) dns.readUInt16(); // skip header
+      const a = dns.readAnswer();
+      expect(a.name).toBe("mydevice.local");
+    });
+  });
+
+  // ─── encodeName ─────────────────────────────────────────────────────────
+
+  describe("encodeName", () => {
+    it("encodes a hostname into DNS label format", () => {
+      const buf = DNSBuffer.encodeName("test.local");
+      // 4 t e s t . 5 l o c a l . 0
+      expect(buf[0]).toBe(4);
+      expect(buf.slice(1, 5).toString()).toBe("test");
+      expect(buf[5]).toBe(5);
+      expect(buf.slice(6, 11).toString()).toBe("local");
+      expect(buf[11]).toBe(0);
+    });
+
+    it("round-trips: encoded name can be decoded back", () => {
+      const names = ["simple.local", "_http._tcp.local", "a.b.c.d.local"];
+      for (const name of names) {
+        const dns = new DNSBuffer(DNSBuffer.encodeName(name));
+        expect(dns.readName()).toBe(name);
+      }
     });
   });
 });
