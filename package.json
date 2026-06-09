@@ -93,6 +93,10 @@
   },
   "packageManager": "yarn@4.13.0",
   "resolutions": {
-    "fast-uri": "^4.0.0"
+    "fast-uri": "^4.0.0",
+    "flatted": "^3.4.2",
+    "postcss": "^8.5.15",
+    "picomatch": "^4.0.4",
+    "ip-address": "^10.2.0"
   }
 }
