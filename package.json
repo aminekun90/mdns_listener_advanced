@@ -1,6 +1,6 @@
 {
   "name": "mdns-listener-advanced",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "Advanced mDNS listener — discover and publish .local hostnames easily.",
   "author": "aminekun90",
   "license": "MIT",
@@ -97,6 +97,7 @@
     "flatted": "^3.4.2",
     "postcss": "^8.5.15",
     "picomatch": "^4.0.4",
-    "ip-address": "^10.2.0"
+    "ip-address": "^10.2.0",
+    "esbuild": "^0.28.1"
   }
 }
