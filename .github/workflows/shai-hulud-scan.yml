@@ -28,7 +28,9 @@ jobs:
           YARN_ENABLE_SCRIPTS: "false"
         run: yarn install --immutable
 
-      - name: Scan for Shai-Hulud IOCs
+      - name: Run full security audit (system + npm IOCs)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./scripts/shai-hulud-scan.sh
+        run: |
+          chmod +x ./shai-hulud-audit.sh ./scripts/shai-hulud-scan.sh
+          ./shai-hulud-audit.sh --no-color
