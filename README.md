@@ -44,6 +44,10 @@ yarn add mdns-listener-advanced
 | 📢 **Multi-Service Publisher** | Announce multiple services simultaneously with independent heartbeats. |
 | 👋 **Goodbye Packets** | RFC 6762 compliant — peers evict your service immediately on `stop()` / `unpublish()`. |
 | 🗂️ **Device Registry** | Live in-memory registry with TTL-based expiry and `DEVICE_FOUND` / `DEVICE_LOST` events. |
+| 🧩 **Responder Correlation** | Records are joined by SRV target into one entry per machine — addresses and every service it offers. |
+| 🏷️ **Device Identification** | Vendor, model and category inferred from `_device-info`, TXT keys and service types — always with evidence and a confidence level. |
+| 🌳 **Tree Walking** | Follows the meta-query down to instances automatically: types → instances → SRV / TXT. |
+| ♻️ **Cache-Flush Bit** | Honours the RFC 6762 §10.2 flush bit, so stale addresses are replaced instead of piling up. |
 | 🌐 **IPv6 (AAAA)** | Parses and emits AAAA records alongside A records. |
 | 🎛️ **Typed Event Proxy** | Strongly-typed `on()` / `once()` / `off()` methods directly on `Core`. |
 | 🔧 **Configurable** | Custom TTL, network interface selection, custom logger. |
@@ -255,7 +259,66 @@ mdns.scan();
 
 ---
 
-### 8. Advanced Options
+### 8. Responders — One Entry Per Machine
+
+A single device announces itself through several records: a PTR per service type,
+an SRV and a TXT per instance, an A or AAAA for its hostname. `DISCOVERY` gives you
+those records one by one; **`RESPONDER_FOUND` gives you the machine.**
+
+The join key is the SRV `target` — the real hostname. Every service pointing at the
+same target belongs to the same box.
+
+```typescript
+import Core, { EmittedEvent, Responder } from "mdns-listener-advanced";
+
+const mdns = new Core();
+
+mdns.on(EmittedEvent.RESPONDER_FOUND, (r: Responder) => {
+  console.log(r.hostname);              // "hp-laser.local"
+  console.log(r.addresses.ipv4);        // ["192.168.1.42"]
+  console.log(r.identity);
+  // { category: "printer", vendor: "HP", model: "LaserJet M281",
+  //   confidence: "probable",
+  //   evidence: ["IPP TXT usb_MFG=HP usb_MDL=LaserJet M281"] }
+
+  for (const s of r.services) {
+    console.log(`  ${s.instance} ${s.type} :${s.port}`, s.txt);
+  }
+});
+
+mdns.listen();
+mdns.scan();                            // tree walking does the rest
+```
+
+`identity.confidence` tells you how much to trust it:
+
+| Level | Source |
+|-|-|
+| `certain` | the device declares its own model (`_device-info._tcp` TXT `model=`) |
+| `probable` | a vendor-documented TXT key (`md`, `am`, `usb_MDL`…) |
+| `guess` | the service type alone, with nothing to confirm it |
+
+`identity.evidence` always lists what the conclusion was built on, so you can judge
+for yourself rather than trusting a label.
+
+#### Teaching it your own hardware
+
+```typescript
+mdns.addSignature({
+  id: "atelier-sonde",
+  match: (services) =>
+    services.some((s) => s.type === "_atelier._tcp")
+      ? { category: "iot", vendor: "Atelier", model: "Sonde v2",
+          confidence: "certain", evidence: "_atelier._tcp présent" }
+      : null,
+});
+```
+
+Custom signatures are evaluated **before** the built-in ones.
+
+---
+
+### 9. Advanced Options
 
 ```typescript
 import Core from "mdns-listener-advanced";
@@ -315,6 +378,10 @@ new Core(hostsList?, mdnsHostsPath?, options?, logger?)
 | `once(event, listener)` | `this` | Registers a one-time typed event listener. Returns `this` for chaining. |
 | `off(event, listener)` | `this` | Removes a typed event listener. Returns `this` for chaining. |
 | `getDiscoveredDevices()` | `Device[]` | Returns a snapshot of all targeted devices currently in the live registry. |
+| `getResponders()` | `Responder[]` | One entry per machine seen on the link: hostname, addresses, every service it offers, and its inferred identity. |
+| `getResponder(hostname)` | `Responder \| null` | A single responder by hostname (case-insensitive), or `null` if never seen. |
+| `addSignature(signature)` | `this` | Registers a custom identification signature, evaluated before the built-in ones. |
+| `setAutoWalk(value)` | `void` | Enables or disables automatic tree walking (on by default). |
 | `setDisableListener(value)` | `void` | Toggles the listener at runtime. |
 | `setDisablePublisher(value)` | `void` | Toggles the publisher at runtime. |
 | `info(...args)` | `void` | Logs via the configured logger — useful for external scripts sharing the same log format. |
@@ -328,6 +395,9 @@ new Core(hostsList?, mdnsHostsPath?, options?, logger?)
 | `deviceFound` | `EmittedEvent.DEVICE_FOUND` | `Device` | A targeted device appeared in the registry for the first time. |
 | `deviceLost` | `EmittedEvent.DEVICE_LOST` | `string` (name) | A targeted device's TTL expired, or a goodbye packet was received. |
 | `rawResponse` | `EmittedEvent.RAW_RESPONSE` | `{ answers: DeviceBuffer[] }` | The full raw parsed packet — useful for debugging or custom record handling. |
+| `responderFound` | `EmittedEvent.RESPONDER_FOUND` | `Responder` | A machine was correlated for the first time — its records add up to a usable entry. |
+| `responderUpdated` | `EmittedEvent.RESPONDER_UPDATED` | `Responder` | A known machine changed: new service, new address, refreshed TXT. |
+| `responderLost` | `EmittedEvent.RESPONDER_LOST` | `string` (hostname) | A machine sent a goodbye packet, or all of its records expired. |
 | `error` | `EmittedEvent.ERROR` | `Error` | Socket error or initialization failure. |
 
 ### Types
