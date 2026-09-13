@@ -424,7 +424,66 @@ type SrvData = {
   port: number;
   target: string;
 };
+
+// ── Correlation ──────────────────────────────────────────────────────────
+// Returned by RESPONDER_FOUND / RESPONDER_UPDATED, getResponders()
+// and getResponder(). One entry per machine, not per record.
+type Responder = {
+  hostname: string;                             // SRV target — the join key
+  addresses: { ipv4: string[]; ipv6: string[] };
+  services: ServiceInstance[];
+  firstSeen: number;                            // epoch ms
+  lastSeen: number;
+  identity: Identity;
+};
+
+type ServiceInstance = {
+  instance: string;                 // "Bureau" — display name, case preserved
+  type: string;                     // "_ipp._tcp"
+  port: number;
+  txt: Record<string, string>;
+  priority: number;
+  weight: number;
+};
+
+// ── Identification ───────────────────────────────────────────────────────
+type Identity = {
+  category: DeviceCategory;
+  vendor?: string;                  // absent when nothing confirms it
+  model?: string;
+  confidence: "certain" | "probable" | "guess";
+  evidence: string[];               // what the conclusion was built on
+};
+
+type DeviceCategory =
+  | "printer" | "scanner" | "speaker" | "tv" | "computer" | "phone"
+  | "tablet" | "wearable" | "nas" | "camera" | "iot" | "unknown";
+
+// Passed to addSignature(). Return null when the signature does not apply.
+type Signature = {
+  id: string;                       // for debugging only
+  match: (services: readonly ServiceInstance[]) => SignatureMatch | null;
+};
+
+type SignatureMatch = Omit<Identity, "evidence"> & { evidence: string };
 ```
+
+> `vendor` and `model` are optional on purpose. The library leaves them
+> undefined rather than guessing — a device speaking AirPlay is not
+> necessarily an Apple device, and saying so would be worse than saying
+> nothing.
+
+### Also exported
+
+| Export | Use |
+|-|-|
+| `ResponderRegistry` | The correlation engine, usable standalone if you parse packets yourself. |
+| `Identifier` | The signature evaluator. `add()`, `clearCustom()`, `identify(services)`. |
+| `BUILTIN_SIGNATURES` | The shipped signature table — read it to see what is recognised. |
+| `parseInstanceName(fqdn)` | `"Bureau._ipp._tcp.local"` → `ParsedInstance`, or `null`. |
+| `ParsedInstance` | `{ instance: string; type: string; domain: string }` — what `parseInstanceName` returns. |
+| `isServiceType(fqdn)` | `true` for `_ipp._tcp.local`, `false` for an instance or a hostname. |
+| `META_QUERY` | `"_services._dns-sd._udp.local"` — the DNS-SD meta-query. |
 
 ---
 
