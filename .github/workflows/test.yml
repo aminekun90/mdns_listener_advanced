@@ -55,6 +55,8 @@ jobs:
         shell: bash
         run: yarn lint
 
+      # `yarn build` inclut check:types, qui verifie que le paquet publie bien
+      # les types qu'il annonce. Voir scripts/check-types-entrypoint.mjs.
       - name: Build package
         shell: bash
         run: yarn build

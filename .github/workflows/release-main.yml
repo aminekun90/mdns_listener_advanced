@@ -58,6 +58,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      # `yarn build` termine par check:types : rien ne part sur npm si le
+      # point d'entree des declarations est faux.
       - name: Build package
         run: yarn build
 

@@ -43,9 +43,10 @@
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "build:js": "tsup src/index.ts --format cjs,esm",
-    "build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
-    "build": "yarn build:js && yarn build:types",
-    "release": "yarn clean && yarn build && yarn test"
+    "build:types": "tsc --emitDeclarationOnly --declaration -p tsconfig.build.json",
+    "build": "yarn build:js && yarn build:types && yarn check:types",
+    "release": "yarn clean && yarn build && yarn test",
+    "check:types": "node scripts/check-types-entrypoint.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.2",
