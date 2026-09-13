@@ -1,8 +1,8 @@
-import { MDNS_IP, MDNS_PORT, NPM_URL } from "@/const.js";
-import { ResponderRegistry } from "@/discovery/ResponderRegistry.js";
-import { META_QUERY, isServiceType, normalizeName, parseInstanceName } from "@/discovery/names.js";
-import type { Signature } from "@/discovery/signatures.js";
-import { DNSBuffer } from "@/protocol/DNSBuffer.js";
+import { MDNS_IP, MDNS_PORT, NPM_URL } from "./const.js";
+import { ResponderRegistry } from "./discovery/ResponderRegistry.js";
+import { META_QUERY, isServiceType, normalizeName, parseInstanceName } from "./discovery/names.js";
+import type { Signature } from "./discovery/signatures.js";
+import { DNSBuffer } from "./protocol/DNSBuffer.js";
 import {
   Device,
   DeviceBuffer,
@@ -11,9 +11,9 @@ import {
   EmittedEvent,
   Options,
   Responder,
-} from "@/types.js";
-import { SimpleLogger } from "@/utils/Logger.js";
-import { parseTxtRecord } from "@/utils/parsers.js";
+} from "./types.js";
+import { SimpleLogger } from "./utils/Logger.js";
+import { parseTxtRecord } from "./utils/parsers.js";
 import { randomUUID } from "node:crypto";
 import dgram from "node:dgram";
 import { EventEmitter } from "node:events";

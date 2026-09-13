@@ -1,0 +1,20 @@
+{
+  // Configuration de publication.
+  //
+  // Elle diffère de tsconfig.json sur deux points, et les deux comptent :
+  //
+  //   1. pas d'alias `paths`. tsup injecte `baseUrl` dès qu'il en voit, et
+  //      TypeScript 6 refuse cette option dépréciée — c'est ce qui faisait
+  //      échouer la génération des types, et qui avait conduit à la désactiver.
+  //   2. `rootDir` sur src, pour que la sortie soit plate : `dist/index.d.ts`
+  //      et non `dist/src/index.d.ts`.
+  //
+  // Les alias restent disponibles pour les tests via tsconfig.json.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "paths": {}
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "__tests__", "example.ts", "eslint.config.ts"]
+}
