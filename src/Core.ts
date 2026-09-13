@@ -7,7 +7,6 @@ import {
   DiscoveredService,
   EmittedEvent,
   Options,
-  SrvData,
 } from "@/types.js";
 import { SimpleLogger } from "@/utils/Logger.js";
 import { parseTxtRecord } from "@/utils/parsers.js";
@@ -512,10 +511,7 @@ export class Core {
     };
   }
 
-  private emitDiscovery(
-    record: DeviceBuffer,
-    type: "PTR" | "SRV" | "A" | "AAAA" | "TXT",
-  ): void {
+  private emitDiscovery(record: DeviceBuffer, type: "PTR" | "SRV" | "A" | "AAAA" | "TXT"): void {
     const service: DiscoveredService = {
       name: record.name,
       type,

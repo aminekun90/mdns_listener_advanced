@@ -100,16 +100,16 @@ export class DNSBuffer {
 
   static createQuery(qname: string, qtype: number = 12): Buffer {
     const header = Buffer.alloc(12);
-    header.writeUInt16BE(0, 0);  // ID
-    header.writeUInt16BE(0, 2);  // Flags (Query)
-    header.writeUInt16BE(1, 4);  // QDCOUNT
-    header.writeUInt16BE(0, 6);  // ANCOUNT
-    header.writeUInt16BE(0, 8);  // NSCOUNT
+    header.writeUInt16BE(0, 0); // ID
+    header.writeUInt16BE(0, 2); // Flags (Query)
+    header.writeUInt16BE(1, 4); // QDCOUNT
+    header.writeUInt16BE(0, 6); // ANCOUNT
+    header.writeUInt16BE(0, 8); // NSCOUNT
     header.writeUInt16BE(0, 10); // ARCOUNT
 
     const qFooter = Buffer.alloc(4);
     qFooter.writeUInt16BE(qtype, 0); // Type
-    qFooter.writeUInt16BE(1, 2);     // Class IN
+    qFooter.writeUInt16BE(1, 2); // Class IN
 
     return Buffer.concat([header, this.encodeName(qname), qFooter]);
   }
@@ -131,20 +131,20 @@ export class DNSBuffer {
 
     // 1. DNS Header
     const header = Buffer.alloc(12);
-    header.writeUInt16BE(0, 0);      // ID
+    header.writeUInt16BE(0, 0); // ID
     header.writeUInt16BE(0x8400, 2); // Flags: Response + Authoritative
-    header.writeUInt16BE(0, 4);      // QDCOUNT
-    header.writeUInt16BE(2, 6);      // ANCOUNT (A + TXT)
-    header.writeUInt16BE(0, 8);      // NSCOUNT
-    header.writeUInt16BE(0, 10);     // ARCOUNT
+    header.writeUInt16BE(0, 4); // QDCOUNT
+    header.writeUInt16BE(2, 6); // ANCOUNT (A + TXT)
+    header.writeUInt16BE(0, 8); // NSCOUNT
+    header.writeUInt16BE(0, 10); // ARCOUNT
     buffers.push(header);
 
     // 2. Answer 1: A Record
     const aHeader = Buffer.alloc(10);
-    aHeader.writeUInt16BE(1, 0);   // Type A
-    aHeader.writeUInt16BE(1, 2);   // Class IN
+    aHeader.writeUInt16BE(1, 0); // Type A
+    aHeader.writeUInt16BE(1, 2); // Class IN
     aHeader.writeUInt32BE(ttl, 4); // TTL
-    aHeader.writeUInt16BE(4, 8);   // RDLength (4 bytes for IPv4)
+    aHeader.writeUInt16BE(4, 8); // RDLength (4 bytes for IPv4)
     buffers.push(this.encodeName(name), aHeader, Buffer.from(ip.split(".").map(Number)));
 
     // 3. Answer 2: TXT Record
@@ -158,9 +158,9 @@ export class DNSBuffer {
     const fullTxt = Buffer.concat(txtParts);
 
     const txtHeader = Buffer.alloc(10);
-    txtHeader.writeUInt16BE(16, 0);             // Type TXT
-    txtHeader.writeUInt16BE(1, 2);              // Class IN
-    txtHeader.writeUInt32BE(ttl, 4);            // TTL
+    txtHeader.writeUInt16BE(16, 0); // Type TXT
+    txtHeader.writeUInt16BE(1, 2); // Class IN
+    txtHeader.writeUInt32BE(ttl, 4); // TTL
     txtHeader.writeUInt16BE(fullTxt.length, 8); // RDLength
     buffers.push(this.encodeName(name), txtHeader, fullTxt);
 
