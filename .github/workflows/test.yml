@@ -49,6 +49,10 @@ jobs:
         shell: bash
         run: yarn install --immutable
 
+      - name: Lint
+        shell: bash
+        run: yarn lint
+
       - name: Build package
         shell: bash
         run: yarn build
@@ -58,6 +62,16 @@ jobs:
         run: yarn test:cov
 
       # ── Security audit (Linux only) ────────────────────────────────────────
+      # Barriere sur les vulnerabilites de dependances. Le seuil est « high » :
+      # deux avis moderate subsistent sans correctif disponible, et ils
+      # signalent un abandon de maintenance, pas une faille — git-raw-commits
+      # via @commitlint/read, tsconfck via vite-tsconfig-paths. Bloquer dessus
+      # rendrait la CI rouge en permanence sans rien apprendre.
+      - name: Audit des dependances (bloquant a partir de high)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: yarn npm audit --all --recursive --severity high
+
       - name: Set permissions on audit script
         if: matrix.os == 'ubuntu-latest'
         run: chmod +x ./shai-hulud-audit.sh
