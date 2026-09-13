@@ -1,4 +1,7 @@
 import { MDNS_IP, MDNS_PORT, NPM_URL } from "@/const.js";
+import { ResponderRegistry } from "@/discovery/ResponderRegistry.js";
+import { META_QUERY, isServiceType, normalizeName, parseInstanceName } from "@/discovery/names.js";
+import type { Signature } from "@/discovery/signatures.js";
 import { DNSBuffer } from "@/protocol/DNSBuffer.js";
 import {
   Device,
@@ -7,6 +10,7 @@ import {
   DiscoveredService,
   EmittedEvent,
   Options,
+  Responder,
 } from "@/types.js";
 import { SimpleLogger } from "@/utils/Logger.js";
 import { parseTxtRecord } from "@/utils/parsers.js";
@@ -57,6 +61,14 @@ export class Core {
   private readonly deviceRegistry = new Map<string, DeviceRegistryEntry>();
   private readonly registryTimers = new Map<string, NodeJS.Timeout>();
 
+  /** Corrélation des enregistrements en répondeurs (une machine, ses services). */
+  private readonly responders: ResponderRegistry;
+  private pruneTimer?: NodeJS.Timeout;
+
+  /** Types et instances déjà interrogés, pour ne pas boucler sur le réseau. */
+  private readonly queried = new Set<string>();
+  private autoWalk = true;
+
   private disableListener: boolean = false;
   private disablePublisher: boolean;
   private error = false;
@@ -94,6 +106,16 @@ export class Core {
       });
 
     this.myEvent = new EventEmitter();
+
+    this.responders = new ResponderRegistry(
+      {
+        onFound: (r) => this.myEvent.emit(EmittedEvent.RESPONDER_FOUND, r),
+        onUpdated: (r) => this.myEvent.emit(EmittedEvent.RESPONDER_UPDATED, r),
+        onLost: (h) => this.myEvent.emit(EmittedEvent.RESPONDER_LOST, h),
+      },
+      parseTxtRecord,
+    );
+
     this.initSocket();
   }
 
@@ -108,6 +130,10 @@ export class Core {
    */
   public listen(ref?: string): EventEmitter {
     if (this.disableListener) return this.myEvent;
+
+    // Les répondeurs expirent sur leur TTL ; sans balayage périodique, une
+    // machine éteinte sans paquet d'adieu resterait listée indéfiniment.
+    this.pruneTimer ??= setInterval(() => this.responders.prune(), 5_000).unref?.() ?? undefined;
     if (this.isListening) return this.myEvent;
 
     this.initSocket();
@@ -219,7 +245,7 @@ export class Core {
    *
    * @param serviceType - Service type to query (default: everything via `_services._dns-sd._udp.local`).
    */
-  public scan(serviceType: string = "_services._dns-sd._udp.local"): void {
+  public scan(serviceType: string = META_QUERY): void {
     if (this.disableListener) {
       this.logger.warn("Cannot scan because listener is disabled.");
       return;
@@ -243,7 +269,7 @@ export class Core {
    * @param timeout     - How long to collect responses in ms (default: 3000).
    */
   public discoverOnce(
-    serviceType: string = "_services._dns-sd._udp.local",
+    serviceType: string = META_QUERY,
     timeout: number = 3000,
   ): Promise<DiscoveredService[]> {
     if (this.disableListener) {
@@ -286,6 +312,12 @@ export class Core {
    * 4. Removes all event listeners and resets state.
    */
   public stop(): void {
+    if (this.pruneTimer) {
+      clearInterval(this.pruneTimer);
+      this.pruneTimer = undefined;
+    }
+    this.responders.clear();
+    this.queried.clear();
     // Stop all heartbeat timers
     for (const timer of this.publishTimers.values()) clearInterval(timer);
     this.publishTimers.clear();
@@ -315,6 +347,9 @@ export class Core {
   public on(event: EmittedEvent.ERROR, listener: (error: Error) => void): this;
   public on(event: EmittedEvent.DEVICE_FOUND, listener: (device: Device) => void): this;
   public on(event: EmittedEvent.DEVICE_LOST, listener: (name: string) => void): this;
+  public on(event: EmittedEvent.RESPONDER_FOUND, listener: (responder: Responder) => void): this;
+  public on(event: EmittedEvent.RESPONDER_UPDATED, listener: (responder: Responder) => void): this;
+  public on(event: EmittedEvent.RESPONDER_LOST, listener: (hostname: string) => void): this;
   public on(event: EmittedEvent, listener: (...args: any[]) => void): this {
     this.myEvent.on(event, listener);
     return this;
@@ -329,6 +364,12 @@ export class Core {
   public once(event: EmittedEvent.ERROR, listener: (error: Error) => void): this;
   public once(event: EmittedEvent.DEVICE_FOUND, listener: (device: Device) => void): this;
   public once(event: EmittedEvent.DEVICE_LOST, listener: (name: string) => void): this;
+  public once(event: EmittedEvent.RESPONDER_FOUND, listener: (responder: Responder) => void): this;
+  public once(
+    event: EmittedEvent.RESPONDER_UPDATED,
+    listener: (responder: Responder) => void,
+  ): this;
+  public once(event: EmittedEvent.RESPONDER_LOST, listener: (hostname: string) => void): this;
   public once(event: EmittedEvent, listener: (...args: any[]) => void): this {
     this.myEvent.once(event, listener);
     return this;
@@ -343,6 +384,9 @@ export class Core {
   public off(event: EmittedEvent.ERROR, listener: (error: Error) => void): this;
   public off(event: EmittedEvent.DEVICE_FOUND, listener: (device: Device) => void): this;
   public off(event: EmittedEvent.DEVICE_LOST, listener: (name: string) => void): this;
+  public off(event: EmittedEvent.RESPONDER_FOUND, listener: (responder: Responder) => void): this;
+  public off(event: EmittedEvent.RESPONDER_UPDATED, listener: (responder: Responder) => void): this;
+  public off(event: EmittedEvent.RESPONDER_LOST, listener: (hostname: string) => void): this;
   public off(event: EmittedEvent, listener: (...args: any[]) => void): this {
     this.myEvent.off(event, listener);
     return this;
@@ -447,6 +491,8 @@ export class Core {
     this.myEvent.emit(EmittedEvent.RAW_RESPONSE, response);
     this.checkTargetedHosts(response.answers);
     this.checkDiscovery(response.answers);
+    this.responders.ingest(response.answers);
+    this.walkTree(response.answers);
   }
 
   private checkTargetedHosts(answers: DeviceBuffer[]): void {
@@ -485,6 +531,76 @@ export class Core {
           break;
       }
     }
+  }
+
+  /**
+   * Parcours d'arbre DNS-SD.
+   *
+   * `scan()` n'envoie qu'une méta-requête : elle rend la liste des *types* de
+   * services présents sur le lien, pas les appareils. Sans la suite, on ne
+   * voit presque rien. Ici, chaque PTR reçu déclenche l'étape suivante :
+   *
+   *   méta-requête → types  →  PTR par type → instances  →  SRV et TXT
+   *
+   * Chaque nom n'est interrogé qu'une fois — sans cela on rebondirait sur nos
+   * propres réponses et on inonderait le réseau.
+   */
+  private walkTree(answers: readonly DeviceBuffer[]): void {
+    if (!this.autoWalk || this.disableListener) return;
+
+    for (const answer of answers) {
+      if (answer.type !== 12 || typeof answer.data !== "string") continue;
+      const cible = normalizeName(answer.data);
+      if (!cible || this.queried.has(cible)) continue;
+
+      if (isServiceType(cible)) {
+        // Un type de service : on demande ses instances.
+        this.queried.add(cible);
+        this.sendQuery(cible, 12);
+      } else if (parseInstanceName(cible)) {
+        // Une instance : on demande où elle est (SRV) et ce qu'elle dit (TXT).
+        this.queried.add(cible);
+        this.sendQuery(cible, 33);
+        this.sendQuery(cible, 16);
+      }
+    }
+  }
+
+  private sendQuery(name: string, type: number): void {
+    const packet = DNSBuffer.createQuery(name, type);
+    this.socket.send(packet, 0, packet.length, MDNS_PORT, MDNS_IP, (err) => {
+      if (err) this.logger.debug(`Query failed for ${name}`, err);
+    });
+  }
+
+  // ─── Public API : répondeurs ─────────────────────────────────────────────
+
+  /**
+   * Tous les répondeurs connus : une entrée par machine, avec ses adresses,
+   * ses services et son identité déduite.
+   */
+  public getResponders(): Responder[] {
+    return this.responders.list();
+  }
+
+  /** Un répondeur par son nom d'hôte, ou `null` s'il n'a jamais été vu. */
+  public getResponder(hostname: string): Responder | null {
+    return this.responders.get(hostname);
+  }
+
+  /**
+   * Ajoute une signature d'identification, évaluée avant celles fournies par
+   * la bibliothèque. De quoi reconnaître un matériel maison sans attendre une
+   * nouvelle version.
+   */
+  public addSignature(signature: Signature): this {
+    this.responders.identifier.add(signature);
+    return this;
+  }
+
+  /** Active ou coupe le parcours d'arbre automatique (actif par défaut). */
+  public setAutoWalk(value: boolean): void {
+    this.autoWalk = value;
   }
 
   // ─── Private: helpers ────────────────────────────────────────────────────

@@ -2,6 +2,37 @@
 
 This file contains a list of all the changes made to this project.
 
+## v4.1.0
+
+**Responder correlation.** A device announces itself through several records —
+a PTR per service type, an SRV and a TXT per instance, an A or AAAA for its
+hostname. Until now those arrived one by one and nothing tied them together.
+They are now joined on the SRV `target`, the real hostname, and surfaced as a
+single `Responder`: addresses plus every service the machine offers.
+
+- new events `RESPONDER_FOUND`, `RESPONDER_UPDATED`, `RESPONDER_LOST`
+- new methods `getResponders()`, `getResponder(hostname)`
+
+**Device identification.** Vendor, model and category are inferred from
+`_device-info._tcp`, vendor-documented TXT keys, and service types. Every
+identity carries a `confidence` level and the `evidence` it was built on —
+the library never asserts without saying why.
+
+- `addSignature()` registers your own signatures, evaluated first
+
+**Tree walking.** `scan()` only ever sent the meta-query, which returns service
+*types*, not devices. Each PTR now triggers the next step automatically:
+types → instances → SRV and TXT. Each name is queried once. `setAutoWalk(false)`
+turns it off.
+
+**Cache-flush bit** (RFC 6762 §10.2) is now honoured. The record class was parsed
+and then ignored, so a machine that changed address dragged the old one along
+indefinitely.
+
+Everything is additive — no existing event, method or type changed.
+
+Miscellaneous : kept 0 prod dependencies Goal. 🎉
+
 ## v3.4.5
 
 - Fixed security issue with a vulnerability in vite

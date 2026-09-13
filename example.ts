@@ -1,39 +1,42 @@
-import { Core, Device, EmittedEvent } from "@/index.js";
-import { EventEmitter } from "node:events";
-// check README examples
-const ref = "MyDevice2";
-// 1. Initialize
+/**
+ * Exemple : découvrir les machines du réseau local et dire ce qu'elles sont.
+ *
+ *   yarn start
+ */
+import Core, { EmittedEvent, type Responder } from "./src/index.js";
+
 const mdns = new Core();
-mdns.info(`📢 Publishing ${ref}...`);
-mdns.publish(ref, { hello: "world" }, 2000);
-// // 2. Start Listener
-const event: EventEmitter = mdns.listen("MyDevice1\nMyDevice2");
 
-// // --- HANDLERS ---
+function decrire(r: Responder): string {
+  const { category, vendor, model, confidence } = r.identity;
+  const etiquette = [vendor, model].filter(Boolean).join(" ") || category;
+  return `${etiquette} (${category}, ${confidence})`;
+}
 
-event.on(EmittedEvent.RESPONSE, (found_hostnames: Device[]) => {
-  mdns.info("✅ Found TARGETED Host:", found_hostnames);
+mdns.on(EmittedEvent.RESPONDER_FOUND, (r: Responder) => {
+  mdns.info(`🖥️  ${r.hostname} — ${decrire(r)}`);
+  mdns.info(`    ${r.addresses.ipv4.join(", ") || "pas d'IPv4"}`);
+  for (const s of r.services) {
+    const txt = Object.entries(s.txt)
+      .slice(0, 3)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(" ");
+    mdns.info(`    ${s.type.padEnd(24)} :${s.port} ${txt}`);
+  }
+  for (const indice of r.identity.evidence) mdns.info(`    ↳ ${indice}`);
 });
 
-event.on(EmittedEvent.DISCOVERY, (device: Device) => {
-  mdns.info(`🔎 Discovered [${device.type}]: ${device.name}`, device.data);
+mdns.on(EmittedEvent.RESPONDER_LOST, (hostname: string) => {
+  mdns.info(`👋 ${hostname} a quitté le réseau`);
 });
 
-event.on(EmittedEvent.ERROR, (error: Error) => {
-  mdns.info("❌ Error:", error.message);
-});
+mdns.on(EmittedEvent.ERROR, (error: Error) => mdns.error(error.message));
 
-// Scan immediately (You can run multiple scans at once)
-// mdns.info("🚀 Scanning for ALL Services...");
-// mdns.scan("_services._dns-sd._udp.local");
+mdns.info("🚀 Recherche des répondeurs mDNS...");
+mdns.listen();
+mdns.scan();
 
-// --- GRACEFUL SHUTDOWN (Ctrl + C) ---
-process.on("SIGINT", () => {
-  mdns.info("🛑 Stopping mDNS Service...");
-
-  // This closes the socket and removes listeners
+setTimeout(() => {
+  mdns.info(`\n📋 ${mdns.getResponders().length} machine(s) vue(s)`);
   mdns.stop();
-
-  // Optional: Force exit if needed
-  process.exit(0);
-});
+}, 10_000);
