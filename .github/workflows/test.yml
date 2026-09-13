@@ -18,7 +18,9 @@ on:
       - "changelog.md"
       - "LICENSE"
       - ".editorconfig"
-    branches: [main, master]
+    # Aucun filtre de branche ici : une PR empilée sur une autre branche
+    # que main doit être testée elle aussi. Sans cela, une PR basée sur une
+    # autre PR ne déclenche aucune CI — le cas s'est présenté.
 
 permissions:
   contents: read
