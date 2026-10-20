@@ -2,6 +2,17 @@
 
 This file contains a list of all the changes made to this project.
 
+## v4.1.1
+
+**Security and tooling.** No API change.
+
+- 9 Dependabot alerts fixed in the dev toolchain (source-map-js, http-cache-semantics,
+  brace-expansion, fast-uri, ip-address); `yarn npm audit` reports nothing
+- unused `vite-tsconfig-paths` removed
+- dev dependencies at their latest version: Vitest 5, tsup 9, ESLint 10.13,
+  typescript-eslint 8.72; TypeScript stays on 6.0 (typescript-eslint does not
+  support 7 yet)
+
 ## v4.1.0
 
 **Responder correlation.** A device announces itself through several records —
